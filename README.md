@@ -107,4 +107,5 @@ Kết quả trên dữ liệu mô phỏng, mức rung 1.0 (từ `day13_final_sum
 ## 5. Hướng phát triển
 
 - Áp dụng LMS/RLS cho dữ liệu IMU thật từ log bay PX4 (`06_RESULTS/log_4_2026-10-25-17-24-42.ulg`).
+- Thu log IMU trên bàn thử (động cơ quay qua QGC) rồi lọc bằng MATLAB. Xem hướng dẫn chi tiết trong [`HUONG_DAN_GHI_LOG.md`](HUONG_DAN_GHI_LOG.md).
 - Thử các biến thể như NLMS và RLS có regularization để cải thiện độ ổn định.
