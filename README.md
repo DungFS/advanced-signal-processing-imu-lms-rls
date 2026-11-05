@@ -42,31 +42,47 @@ Tham số mặc định:
 ## 2. Cấu trúc thư mục
 
 ```
-├── 09_MATLABCODE/   Mã nguồn MATLAB (chạy theo thứ tự ngày)
-└── 06_RESULTS/      Kết quả: dữ liệu .mat, bảng .csv, hình .png, log PX4 .ulg
+├── README.md
+├── docs/
+│   └── HUONG_DAN_GHI_LOG.md     Hướng dẫn ghi log IMU trên bàn thử qua QGC
+├── code/                        Mã nguồn MATLAB, chia theo giai đoạn
+│   ├── 01_setup/                Làm quen MATLAB
+│   ├── 02_simulation/           Sinh tín hiệu IMU mô phỏng, phân tích FFT/PSD
+│   ├── 03_lms_rls/              Cài đặt LMS, RLS và so sánh hai bộ lọc
+│   ├── 04_parameter_study/      Khảo sát tham số μ, λ và độ nhạy
+│   ├── 05_robustness/           Thử nhiều mức rung, hội tụ, ổn định
+│   ├── 06_summary/              Tổng hợp, vẽ hình cuối, kiểm tra kết quả
+│   └── 07_real_data/            Áp dụng cho log IMU thật
+├── data/                        Dữ liệu đo thật (đầu vào, không sinh lại được)
+│   ├── bench/                   Log bàn thử: bench_lms_rls_01.csv + ghi chú
+│   └── flight/                  Log bay PX4 (.ulg)
+└── results/                     Kết quả do script sinh ra
+    ├── simulation/              Kết quả trên dữ liệu mô phỏng (day02 → day14)
+    └── real_data/               Kết quả lọc log thật (day15)
 ```
 
-| Script | Nội dung |
-|---|---|
-| `test_matlab.m` | Làm quen MATLAB: mô phỏng sóng sin |
-| `day02_generate_imu.m` | Sinh tín hiệu IMU mô phỏng và nhiễu rung |
-| `day03_fft_psd_analysis.m` | Phân tích FFT và PSD của tín hiệu gốc |
-| `day04_lms.m` | Cài đặt bộ lọc LMS |
-| `day05_rls.m` | Cài đặt bộ lọc RLS |
-| `day06_compare_lms_rls.m` | So sánh LMS và RLS trong miền thời gian |
-| `day07_fft_psd_comparison.m` | So sánh trong miền tần số (FFT/PSD) |
-| `day08_rmse_snr_evaluation.m` | Đánh giá RMSE, SNR và đường hội tụ sai số |
-| `day09_parameter_study.m` | Khảo sát tham số `μ` (LMS) và `λ` (RLS) |
-| `day09_rls_diagnostic.m` | Chẩn đoán RLS mất ổn định khi `λ` nhỏ |
-| `day10_check_inputs.m` | Kiểm tra dữ liệu đầu vào |
-| `day10_vibration_levels.m` | Thử với 4 mức nhiễu rung (0.25, 0.5, 1.0, 1.5) |
-| `day10_frequency_levels.m` | FFT/PSD theo từng mức rung |
-| `day10_residual_validation.m` | Kiểm tra nhiễu dư sau lọc |
-| `day11_convergence_analysis.m` | Phân tích hội tụ và ổn định |
-| `day12_parameter_sensitivity.m` | Độ nhạy của kết quả với tham số |
-| `day13_*.m` | Tổng hợp kết quả và vẽ hình cuối cùng |
-| `day14_*.m` | Kiểm tra, xác nhận toàn bộ file kết quả |
-| `day15_step01_inspect_px4_log.m` | Đọc log bay PX4 thực tế (`.ulg`) để chuẩn bị áp dụng cho dữ liệu thật |
+| Thư mục | Script | Nội dung |
+|---|---|---|
+| `01_setup` | `test_matlab.m` | Làm quen MATLAB: mô phỏng sóng sin |
+| `02_simulation` | `day02_generate_imu.m` | Sinh tín hiệu IMU mô phỏng và nhiễu rung |
+| | `day03_fft_psd_analysis.m` | Phân tích FFT và PSD của tín hiệu gốc |
+| `03_lms_rls` | `day04_lms.m` | Cài đặt bộ lọc LMS |
+| | `day05_rls.m` | Cài đặt bộ lọc RLS |
+| | `day06_compare_lms_rls.m` | So sánh LMS và RLS trong miền thời gian |
+| | `day07_fft_psd_comparison.m` | So sánh trong miền tần số (FFT/PSD) |
+| | `day08_rmse_snr_evaluation.m` | Đánh giá RMSE, SNR và đường hội tụ sai số |
+| `04_parameter_study` | `day09_parameter_study.m` | Khảo sát tham số `μ` (LMS) và `λ` (RLS) |
+| | `day09_rls_diagnostic.m` | Chẩn đoán RLS mất ổn định khi `λ` nhỏ |
+| | `day12_parameter_sensitivity.m` | Độ nhạy của kết quả với tham số |
+| `05_robustness` | `day10_check_inputs.m` | Kiểm tra dữ liệu đầu vào |
+| | `day10_vibration_levels.m` | Thử với 4 mức nhiễu rung (0.25, 0.5, 1.0, 1.5) |
+| | `day10_frequency_levels.m` | FFT/PSD theo từng mức rung |
+| | `day10_residual_validation.m` | Kiểm tra nhiễu dư sau lọc |
+| | `day11_convergence_analysis.m` | Phân tích hội tụ và ổn định |
+| `06_summary` | `day13_*.m` | Tổng hợp kết quả và vẽ hình cuối cùng |
+| | `day14_*.m` | Kiểm tra, xác nhận toàn bộ file kết quả |
+| `07_real_data` | `day15_step01_inspect_px4_log.m` | Liệt kê các topic trong log bay PX4 (`.ulg`, cần UAV Toolbox) |
+| | `day15_step02_filter_bench_log.m` | Lọc NLMS/RLS (dạng ALE) trên log bàn thử `bench_lms_rls_01` |
 
 ---
 
@@ -94,18 +110,31 @@ Kết quả trên dữ liệu mô phỏng, mức rung 1.0 (từ `day13_final_sum
 - **RLS** mất ổn định số khi `λ ≤ 0.98`, và chỉ ổn định khi `λ ≥ 0.99`. Chi tiết xem `day13_rls_diagnostics.csv`.
 - Mức rung càng lớn thì tỉ lệ giảm RMSE càng cao: LMS từ 33 % lên 85 %, RLS từ 42 % lên 88 %. Đổi lại, RLS chậm hơn LMS khoảng 4 lần về thời gian tính toán.
 
+### Trên log bàn thử thật (`bench_lms_rls_01`)
+
+Log thật không có tín hiệu tham chiếu nhiễu, nên `day15_step02` dùng cấu trúc **Adaptive Line Enhancer**: tham chiếu là chính tín hiệu IMU trễ 5 mẫu. Giảm RMS rung so với mức khi tắt động cơ (`results/real_data/day15_bench_rms_summary.csv`):
+
+| Đoạn | X (NLMS / RLS) | Y (NLMS / RLS) | Z (NLMS / RLS) |
+|---|---|---|---|
+| PWM 1100 | 2 % / −1 % | 4 % / 3 % | 1 % / −1 % |
+| PWM 1212 | 11 % / 20 % | 19 % / 29 % | 6 % / 9 % |
+| PWM 1412 | 23 % / 26 % | 24 % / 24 % | 19 % / 20 % |
+
+Mức giảm thấp hơn mô phỏng vì không có tham chiếu nhiễu thật và log chỉ lấy mẫu khoảng 147 Hz, nên rung tần số cao bị chồng phổ.
+
 ---
 
 ## 4. Cách chạy
 
-1. Mở MATLAB R2023a.
-2. Sửa đường dẫn gốc ở đầu mỗi script (biến `projectRoot` / `rootDir` / `baseDir`) thành thư mục chứa repo này.
-3. Chạy các script trong `09_MATLABCODE` theo thứ tự `day02` → `day14`. Script sau dùng file `.mat` do script trước tạo ra trong `06_RESULTS`.
+1. Mở MATLAB (R2023a trở lên).
+2. Chạy các script theo thứ tự thư mục `code/01_setup` → `code/07_real_data`. Mỗi script tự xác định thư mục gốc của repo, nên không cần sửa đường dẫn.
+3. Kết quả mô phỏng được ghi vào `results/simulation/`. Script sau dùng file `.mat` do script trước tạo ra trong thư mục này.
+4. Script dữ liệu thật đọc log trong `data/` và ghi kết quả vào `results/real_data/`.
 
 ---
 
 ## 5. Hướng phát triển
 
-- Áp dụng LMS/RLS cho dữ liệu IMU thật từ log bay PX4 (`06_RESULTS/log_4_2026-10-25-17-24-42.ulg`).
-- Thu log IMU trên bàn thử (động cơ quay qua QGC) rồi lọc bằng MATLAB. Xem hướng dẫn chi tiết trong [`HUONG_DAN_GHI_LOG.md`](HUONG_DAN_GHI_LOG.md).
+- Áp dụng LMS/RLS cho log bay PX4 (`data/flight/log_4_2026-10-25-17-24-42.ulg`). Cần UAV Toolbox để đọc file `.ulg`.
+- Ghi thêm log bàn thử với tần số lấy mẫu cao hơn (200–250 Hz) và mỗi mức ga dài hơn 20 s. Xem hướng dẫn trong [`docs/HUONG_DAN_GHI_LOG.md`](docs/HUONG_DAN_GHI_LOG.md).
 - Thử các biến thể như NLMS và RLS có regularization để cải thiện độ ổn định.
