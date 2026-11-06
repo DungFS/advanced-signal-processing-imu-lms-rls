@@ -1,0 +1,31 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+Phụ lục này chỉ trích các dòng cập nhật cốt lõi của ba bộ lọc; mã đầy đủ (đọc dữ liệu, vẽ hình, lưu kết quả) có trong kho mã nêu ở Phụ lục~\ref{app:repro}.
+
+\begin{lstlisting}
+% ---- LMS (day04_lms.m), cau truc ANC ----
+for n = M:N
+    xVec = x(n:-1:n-M+1);           % vector tham chieu
+    y(n) = w' * xVec;               % uoc luong nhieu rung
+    e(n) = d(n) - y(n);             % dau ra da loc
+    w = w + mu * e(n) * xVec;       % cap nhat LMS
+end
+
+% ---- RLS (day05_rls.m), cap nhat moi mau ----
+Px = P*xVec;
+denominator = lambda + xVec.'*Px;
+if ~isfinite(denominator) || denominator <= 0
+    error('RLS numerical instability at sample %d', n);
+end
+K = Px/denominator;
+w = w + K*e(n);
+P = (P - K*(xVec.'*P))/lambda;
+P = (P + P.')/2;                    % giu P doi xung
+
+% ---- ALE cho du lieu that (day15_step02_filter_bench_log.m) ----
+x  = [zeros(Delta,1); d(1:end-Delta)];             % tham chieu = d tre Delta mau
+w  = w + (mu/(1e-6 + xv.'*xv)) * eL(n) * xv;       % cap nhat NLMS
+\end{lstlisting}
+
+\end{document}

@@ -1,0 +1,217 @@
+%% =====================================================================
+%%  BÁO CÁO: LỌC THÍCH NGHI LMS/RLS GIẢM NHIỄU RUNG TÍN HIỆU IMU (ROBOT/UAV)
+%%  Dựng trên mẫu SOICT_DATN_Research (HUST), tối ưu cho Overleaf bản Free
+%%  Trình biên dịch: pdfLaTeX  |  Tài liệu tham khảo: BibTeX (IEEEtran)
+%%  Mẹo: khi soạn thảo, bật [draft] ở dòng \usepackage{graphicx} để biên dịch
+%%       nhanh hơn (ảnh hiển thị thành khung trống); tắt khi xuất bản cuối.
+%% =====================================================================
+\documentclass[a4paper,oneside]{report}
+\usepackage{scrextend}
+\changefontsizes{13pt}
+\usepackage[utf8]{vietnam}
+\usepackage[top=2cm, bottom=2cm, left=3.5cm, right=2.5cm]{geometry}
+\usepackage{xurl}
+\usepackage{appendix}
+\usepackage{xcolor}
+\usepackage{graphicx}            % thêm [draft] để biên dịch nhanh khi đang sửa
+\usepackage{indentfirst}
+\usepackage{amsthm,amsmath,amssymb,amsbsy}
+\usepackage{icomma}              % dấu phẩy thập phân trong công thức: 0,01
+\usepackage{times}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{subfiles}
+\usepackage{titlesec}
+\usepackage{titletoc}
+\usepackage{chngcntr}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage[nonumberlist, nopostdot, nogroupskip, acronym, toc]{glossaries}
+\usepackage{glossary-superragged}
+\setglossarystyle{superraggedheaderborder}
+\usepackage{setspace}
+\usepackage{parskip}
+
+% ---------------- THÔNG TIN BÁO CÁO (sửa tại đây) ----------------------
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}   % ô cần điền, in màu đỏ
+\def\TITLE{BÁO CÁO BÀI TẬP LỚN}
+\def\COURSE{XỬ LÝ TÍN HIỆU SỐ NÂNG CAO}
+\def\THESISTITLE{NGHIÊN CỨU VÀ ỨNG DỤNG BỘ LỌC THÍCH NGHI LMS/RLS TRONG GIẢM NHIỄU RUNG TÍN HIỆU IMU CHO ROBOT/UAV}
+\def\AUTHOR{Nguyễn Việt Dũng}
+\def\STUDENTID{20252690M}
+\def\AUTHORTWO{Trần Quốc Việt}
+\def\STUDENTIDTWO{20251011M}
+\def\SUPERVISOR{Thầy Đặng Quang Hiếu}
+\def\DEPARTMENT{Khoa Điện tử}
+\def\SCHOOL{Trường Điện -- Điện tử}
+\def\DATE{HÀ NỘI, 11/2026}
+
+% ---------------- Mã nguồn MATLAB ----------------
+\lstdefinestyle{matlab}{language=Matlab, basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{blue}\bfseries, commentstyle=\color{green!45!black},
+  stringstyle=\color{purple}, numbers=left, numberstyle=\tiny\color{gray},
+  frame=single, breaklines=true, columns=fullflexible, showstringspaces=false,
+  inputencoding=utf8, extendedchars=true, tabsize=2}
+\lstset{style=matlab}
+
+\input{glossary}
+
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \fancyfoot[RO,LE]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}}
+\setlength{\headheight}{18pt}
+
+% ---------------- Định dạng tiêu đề (giữ theo mẫu HUST) ----------------
+\titleformat{\chapter}[hang]{\centering\bfseries\large}{CHƯƠNG \thechapter.\ }{0pt}{}[]
+\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
+\titleformat{\section}[hang]{\bfseries}{\thechapter.\arabic{section}\ \ \ }{0pt}{}[]
+\titlespacing{\section}{0pt}{\parskip}{0.5\parskip}
+\titleformat{\subsection}[hang]{\bfseries}{\thechapter.\arabic{section}.\arabic{subsection}\ \ \ }{0pt}{}[]
+\titlespacing{\subsection}{30pt}{\parskip}{0.5\parskip}
+\renewcommand\thesubsubsection{\alph{subsubsection}}
+\titleformat{\subsubsection}[hang]{\bfseries}{\alph{subsubsection}, \ }{0pt}{}[]
+\titlespacing{\subsubsection}{50pt}{\parskip}{0.5\parskip}
+
+\usepackage[unicode]{hyperref}
+\hypersetup{pdfborder={0 0 0}, pdftitle={LMS/RLS IMU vibration filtering}, pdfauthor={Nguyen Viet Dung, Tran Quoc Viet}}
+\usepackage[all]{hypcap}
+% Cho phép xuống dòng sau dấu gạch dưới trong tên tệp/script (\texttt{...})
+\renewcommand{\_}{\textunderscore\allowbreak}
+
+\graphicspath{{figures/}{../figures/}}
+\counterwithin{figure}{chapter}
+\counterwithin{table}{chapter}
+\counterwithin{equation}{chapter}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+\theoremstyle{definition}
+\newtheorem{example}{Ví dụ}[chapter]
+\newtheorem{remark}{Nhận xét}[chapter]
+
+% Giảm khoảng trắng quanh hình/bảng
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}\setcounter{bottomnumber}{2}\setcounter{totalnumber}{4}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+
+\onehalfspacing
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{15pt}
+
+% Tên các mục bằng tiếng Việt
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\chaptername}{CHƯƠNG}
+\renewcommand{\contentsname}{MỤC LỤC}
+\renewcommand{\listfigurename}{DANH MỤC HÌNH VẼ}
+\renewcommand{\listtablename}{DANH MỤC BẢNG BIỂU}
+\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+\renewcommand{\lstlistingname}{Đoạn mã}
+\SetAlgorithmName{Thuật toán}{thuật toán}{Danh sách thuật toán}
+\SetKwInput{KwIn}{Vào}\SetKwInput{KwOut}{Ra}
+
+% Vectơ, ký hiệu
+\newcommand{\vect}[1]{\mathbf{#1}}
+
+% =========================== BODY ===============
+\begin{document}
+\subfile{Cover}
+\subfile{Cover2}
+
+\pagestyle{empty}
+\clearpage
+\pagenumbering{roman}
+\pagestyle{plain}
+\subfile{Chapter/0_2_Acknowledgment}
+
+\clearpage
+\subfile{Chapter/0_3_Abstract}
+
+\clearpage
+\titlecontents{chapter}[0cm]{\bfseries\vspace{0.3cm}}{{\bfseries CHƯƠNG \thecontentslabel.\ }}{}{\titlerule*[0.3pc]{.}\contentspage}
+\titlecontents{section}[0cm]{\vspace{0.15cm}}{\thecontentslabel\ \ }{}{\titlerule*[0.3pc]{.}\contentspage}
+\titlecontents{subsection}[1cm]{\vspace{0.1cm}}{\thecontentslabel\ \ }{}{\titlerule*[0.3pc]{.}\contentspage}
+\tableofcontents
+
+\clearpage
+{\let\oldnumberline\numberline
+ \renewcommand{\numberline}{Hình~\oldnumberline}
+ \listoffigures}
+\phantomsection\addcontentsline{toc}{chapter}{DANH MỤC HÌNH VẼ}
+
+\clearpage
+{\let\oldnumberline\numberline
+ \renewcommand{\numberline}{Bảng~\oldnumberline}
+ \listoftables}
+\phantomsection\addcontentsline{toc}{chapter}{DANH MỤC BẢNG BIỂU}
+\glsaddall % đặt ở đây để không sinh trang trắng
+
+\clearpage
+\renewcommand*{\acronymname}{DANH MỤC TỪ VIẾT TẮT}
+\renewcommand*{\entryname}{Từ viết tắt}
+\renewcommand*{\descriptionname}{Ý nghĩa}
+\printnoidxglossaries
+
+\clearpage
+\subfile{Chapter/0_4_Symbols}
+
+% ===================================================
+\clearpage
+\pagenumbering{arabic}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[RO,LE]{\small\leftmark}
+\fancyfoot[RO,LE]{\thepage}
+\renewcommand{\chaptermark}[1]{\markboth{CHƯƠNG \thechapter. #1}{}}
+
+\chapter{GIỚI THIỆU ĐỀ TÀI}
+\subfile{Chapter/1_Introduction}
+
+\chapter{CƠ SỞ LÝ THUYẾT VÀ TỔNG QUAN}
+\subfile{Chapter/2_Literature_review}
+
+\chapter{PHƯƠNG PHÁP ĐỀ XUẤT}
+\subfile{Chapter/3_Methodology}
+
+\chapter{KẾT QUẢ THỰC NGHIỆM}
+\subfile{Chapter/5_Numerical_results}
+
+\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+\subfile{Chapter/6_Conclusions}
+
+% ===================================================
+\clearpage
+\phantomsection\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\markboth{TÀI LIỆU THAM KHẢO}{}
+\bibliographystyle{IEEEtran}
+\bibliography{reference}
+
+\clearpage
+\renewcommand\appendixname{PHỤ LỤC}
+\renewcommand\appendixpagename{PHỤ LỤC}
+\renewcommand\appendixtocname{PHỤ LỤC}
+\appendix
+\titleformat{\chapter}[hang]{\centering\bfseries\large}{PHỤ LỤC \thechapter.\ }{0pt}{}[]
+\titlecontents{chapter}[0cm]{\bfseries\vspace{0.3cm}}{{\bfseries PHỤ LỤC \thecontentslabel.\ }}{}{\titlerule*[0.3pc]{.}\contentspage}
+\renewcommand{\chaptermark}[1]{\markboth{PHỤ LỤC \thechapter. #1}{}}
+
+\chapter{MÃ NGUỒN VÀ HƯỚNG DẪN TÁI LẬP}\label{app:repro}
+\subfile{Chapter/Appendix_A}
+
+\chapter{TRÍCH ĐOẠN MÃ NGUỒN MATLAB}\label{app:code}
+\subfile{Chapter/Appendix_B}
+
+\end{document}

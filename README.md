@@ -4,6 +4,16 @@
 
 Đề tài dùng bộ lọc thích nghi **LMS** (Least Mean Squares) và **RLS** (Recursive Least Squares) để khử nhiễu rung động cơ trong tín hiệu gia tốc IMU. Sau đó so sánh hai thuật toán theo các tiêu chí: miền thời gian, miền tần số, tốc độ hội tụ, độ ổn định và độ nhạy với tham số.
 
+| | |
+|---|---|
+| **Học viên** | Nguyễn Việt Dũng (20252690M), Trần Quốc Việt (20251011M) |
+| **Giảng viên hướng dẫn** | Thầy Đặng Quang Hiếu |
+| **Đơn vị** | Khoa Điện tử, Trường Điện – Điện tử, Đại học Bách khoa Hà Nội |
+
+📄 **Báo cáo:** [`docs/report/IMU_LMS_RLS_Report.pdf`](docs/report/IMU_LMS_RLS_Report.pdf) (mã nguồn LaTeX trong [`docs/report/latex/`](docs/report/latex/))
+📊 **Slide:** [`docs/slides/Slide_LMS_RLS_IMU_HUST.pptx`](docs/slides/Slide_LMS_RLS_IMU_HUST.pptx)
+🎥 **Demo bàn thử:** [`docs/media/demo_video.mp4`](docs/media/demo_video.mp4), ảnh [`docs/media/bench_setup.jpg`](docs/media/bench_setup.jpg)
+
 Công cụ: **MATLAB R2023a**. Cần thêm Signal Processing Toolbox (`pwelch`) và UAV Toolbox (`ulogreader`, chỉ để đọc log PX4).
 
 ---
@@ -44,7 +54,12 @@ Tham số mặc định:
 ```
 ├── README.md
 ├── docs/
-│   └── HUONG_DAN_GHI_LOG.md     Hướng dẫn ghi log IMU trên bàn thử qua QGC
+│   ├── HUONG_DAN_GHI_LOG.md     Hướng dẫn ghi log IMU trên bàn thử qua QGC
+│   ├── report/
+│   │   ├── IMU_LMS_RLS_Report.pdf   Báo cáo bài tập lớn (bản PDF)
+│   │   └── latex/               Mã nguồn LaTeX (main.tex, Chapter/, figures/)
+│   ├── slides/                  Slide thuyết trình (.pptx)
+│   └── media/                   Video demo và ảnh bàn thử
 ├── code/                        Mã nguồn MATLAB, chia theo giai đoạn
 │   ├── 01_setup/                Làm quen MATLAB
 │   ├── 02_simulation/           Sinh tín hiệu IMU mô phỏng, phân tích FFT/PSD
@@ -122,6 +137,10 @@ Log thật không có tín hiệu tham chiếu nhiễu, nên `day15_step02` dùn
 
 Mức giảm thấp hơn mô phỏng vì không có tham chiếu nhiễu thật và log chỉ lấy mẫu khoảng 147 Hz, nên rung tần số cao bị chồng phổ.
 
+### Trên log bay PX4 (sơ bộ)
+
+Báo cáo (mục 4.5) chạy NLMS/RLS dạng ALE trên topic `sensor_combined_0` của log bay (`Fs ≈ 208 Hz`, khoảng 70 s). RMS AC của đầu ra dự đoán `y(n)` thấp hơn tín hiệu gốc 18.9–28.1 % với NLMS và 34.9–42.3 % với RLS. Tuy vậy, PSD cho thấy các đỉnh rung 14 Hz và 22 Hz vẫn còn, nên đây **chưa phải** là mức khử rung thực sự. Nhánh này cần làm tiếp.
+
 ---
 
 ## 4. Cách chạy
@@ -131,10 +150,12 @@ Mức giảm thấp hơn mô phỏng vì không có tham chiếu nhiễu thật 
 3. Kết quả mô phỏng được ghi vào `results/simulation/`. Script sau dùng file `.mat` do script trước tạo ra trong thư mục này.
 4. Script dữ liệu thật đọc log trong `data/` và ghi kết quả vào `results/real_data/`.
 
+**Biên dịch báo cáo:** nén thư mục `docs/report/latex/` thành file zip rồi tải lên Overleaf (New Project → Upload Project), hoặc biên dịch tại máy với `main.tex` là file chính (BibTeX, kiểu IEEEtran).
+
 ---
 
 ## 5. Hướng phát triển
 
-- Áp dụng LMS/RLS cho log bay PX4 (`data/flight/log_4_2026-10-25-17-24-42.ulg`). Cần UAV Toolbox để đọc file `.ulg`.
+- Hoàn thiện nhánh log bay PX4 (`data/flight/log_4_2026-10-25-17-24-42.ulg`). Báo cáo đã có kết quả sơ bộ (mục 4.5) từ script `day16_step04_filter_flight_imu.m`, nhưng script này chưa được đưa vào repo.
 - Ghi thêm log bàn thử với tần số lấy mẫu cao hơn (200–250 Hz) và mỗi mức ga dài hơn 20 s. Xem hướng dẫn trong [`docs/HUONG_DAN_GHI_LOG.md`](docs/HUONG_DAN_GHI_LOG.md).
 - Thử các biến thể như NLMS và RLS có regularization để cải thiện độ ổn định.

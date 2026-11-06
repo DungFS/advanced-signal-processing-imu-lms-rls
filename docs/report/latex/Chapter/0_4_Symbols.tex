@@ -1,0 +1,38 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+\begin{center}
+    \Large{\textbf{DANH MỤC KÝ HIỆU}}
+\end{center}
+\phantomsection\addcontentsline{toc}{chapter}{DANH MỤC KÝ HIỆU}
+\vspace{0.3cm}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{3cm}p{10.5cm}@{}}
+\toprule
+\textbf{Ký hiệu} & \textbf{Ý nghĩa} \\
+\midrule
+$F_s$, $T_s$ & Tần số lấy mẫu (Hz) và chu kỳ lấy mẫu (s) \\
+$N$ & Số mẫu của tín hiệu \\
+$f_N=F_s/2$ & Tần số Nyquist \\
+$s(n)$ & Tín hiệu hữu ích (tín hiệu chuẩn trong mô phỏng) \\
+$v(n)$ & Nhiễu cộng, gồm rung động cơ $v_m(n)$ và nhiễu ngẫu nhiên $v_r(n)$ \\
+$d(n)$ & Tín hiệu đo (tín hiệu mong muốn của bộ lọc), $d(n)=s(n)+v(n)$ \\
+$x(n)$, $\vect{x}(n)$ & Tín hiệu tham chiếu và vectơ hồi quy $M$ mẫu \\
+$y(n)$ & Đầu ra bộ lọc FIR thích nghi \\
+$e(n)$ & Sai số $e(n)=d(n)-y(n)$ \\
+$\vect{w}(n)$ & Vectơ trọng số bộ lọc ($M\times 1$) \\
+$M$ & Bậc (số hệ số) của bộ lọc \\
+$\mu$ & Bước học của LMS/NLMS \\
+$\varepsilon$ & Hằng số chuẩn hoá của NLMS \\
+$\lambda$ & Hệ số quên của RLS \\
+$\delta$ & Hằng số khởi tạo $\vect{P}(0)=\delta^{-1}\vect{I}$ của RLS \\
+$\vect{P}(n)$ & Ước lượng nghịch đảo ma trận tự tương quan ($M\times M$) \\
+$\vect{k}(n)$ & Vectơ độ lợi của RLS \\
+$\Delta$ & Độ trễ giải tương quan của cấu trúc ALE (mẫu) \\
+$\vect{R}_{xx}$, $\lambda_{\max}$ & Ma trận tự tương quan đầu vào và trị riêng lớn nhất của nó \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}

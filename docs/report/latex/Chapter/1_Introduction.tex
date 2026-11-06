@@ -1,0 +1,23 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+\section{Đặt vấn đề}
+\label{sec:dvd}
+
+Khối đo lường quán tính (IMU) cung cấp gia tốc và vận tốc góc cho các khâu ước lượng trạng thái của robot và UAV~\cite{titterton2004strapdown}. Trên UAV nhiều cánh quạt, IMU gắn trên khung chịu rung trực tiếp từ động cơ và cánh quạt, nên tín hiệu đo chứa dao động không thuộc chuyển động hữu ích. Lọc rung vì vậy không chỉ là làm giảm biên độ dao động mà còn phải giữ lại chuyển động thật; một bộ lọc quá mạnh có thể cho đường tín hiệu trơn hơn nhưng lệch xa thực tế hơn.
+
+Cách tiếp cận thông dụng là lọc thông thấp và lọc chặn (notch) với tần số cấu hình trước~\cite{oppenheim2010dtsp}. Hạn chế của cách này là phải biết trước dải rung, trong khi tần số rung động cơ thay đổi theo mức ga, và lọc thông thấp mạnh làm tăng độ trễ pha. Lọc thích nghi~\cite{haykin2014adaptive,widrow1985adaptive} khắc phục một phần vì hệ số lọc được cập nhật theo dữ liệu, qua cấu trúc khử nhiễu thích nghi (ANC) khi có kênh tham chiếu nhiễu~\cite{widrow1975anc} hoặc bộ tăng cường vạch phổ thích nghi (ALE) khi chỉ có một kênh đo. Với lọc thích nghi, không cần biết trước chính xác tần số rung, và bộ lọc tự điều chỉnh khi mức ga thay đổi. Tuy vậy, khi áp dụng cho IMU thật, nhóm gặp ba khó khăn: thường không có kênh đo rung độc lập, không có tín hiệu chuẩn để tính sai số tuyệt đối, và dữ liệu log có tần số lấy mẫu giới hạn.
+
+\section{Mục tiêu và phạm vi}
+
+Nhóm đặt ra ba mục tiêu: (i) cài đặt và kiểm tra LMS/RLS trên dữ liệu mô phỏng có tín hiệu chuẩn; (ii) khảo sát ảnh hưởng của tham số ($\mu$, $\lambda$) và mức rung tới chất lượng lọc, tốc độ hội tụ và độ ổn định số; (iii) áp dụng offline trên dữ liệu IMU thật và so sánh trong miền thời gian và miền tần số. Vì dữ liệu thật không có tín hiệu chuẩn, nhóm đánh giá riêng hai phần: mô phỏng dùng RMSE và SNR, còn dữ liệu thật chỉ dùng RMS và PSD so với lúc tắt động cơ. Nhóm sử dụng ba nguồn dữ liệu, từ dễ đến khó: (a) tín hiệu mô phỏng có rung 30~Hz và 60~Hz cùng kênh tham chiếu lý tưởng; (b) log IMU ghi trên bàn thử động cơ với bộ điều khiển bay PX4, cánh quạt đã tháo, ở các mức PWM 1100, 1212 và 1412; (c) một log bay PX4 dài khoảng 70~s, dùng như thử nghiệm sơ bộ. Toàn bộ xử lý được thực hiện offline trên MATLAB R2023a. Đề tài không thiết kế bộ điều khiển bay, không sửa firmware PX4 và không triển khai lọc thời gian thực trên vi điều khiển.
+
+\section{Kết quả đạt được}
+
+Qua đề tài, nhóm đã làm được ba việc chính. Thứ nhất, nhóm xây dựng bộ mô phỏng có tín hiệu chuẩn và các script đánh giá (RMSE, SNR, FFT, PSD, hội tụ, khảo sát tham số và mức rung); kết quả lưu dưới dạng CSV/MAT và có thể chạy lại từ kho mã (Phụ lục~\ref{app:repro}). Thứ hai, nhóm tự dựng bàn thử động cơ với bộ điều khiển bay PX4, ghi log IMU, rồi áp dụng NLMS/RLS ở cấu trúc ALE và đánh giá theo từng mức PWM. Thứ ba, nhóm tìm ra nguyên nhân RLS bị lỗi số khi hệ số quên nhỏ và so sánh kết quả giữa ba nguồn dữ liệu.
+
+\section{Bố cục báo cáo}
+
+Chương~2 tóm tắt cơ sở lý thuyết về phân tích phổ, cấu trúc ANC/ALE và các thuật toán LMS, NLMS, RLS. Chương~3 mô tả mô hình mô phỏng, quy trình thu và xử lý dữ liệu bàn thử và log bay. Chương~4 trình bày và thảo luận kết quả thực nghiệm. Chương~5 tổng kết, nêu hạn chế và hướng phát triển. Cuối báo cáo gồm danh mục tài liệu tham khảo và hai phụ lục: Phụ lục~A giới thiệu kho mã nguồn và hướng dẫn tái lập kết quả, Phụ lục~B trích các đoạn mã MATLAB cốt lõi của ba bộ lọc.
+
+\end{document}

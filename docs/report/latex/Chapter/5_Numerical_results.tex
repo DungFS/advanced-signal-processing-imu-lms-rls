@@ -1,0 +1,384 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày kết quả theo ba nhánh dữ liệu đã mô tả ở Chương~3: mô phỏng có tín hiệu chuẩn (mục~\ref{sec:res_sim}--\ref{sec:res_level}), dữ liệu bàn thử động cơ (mục~\ref{sec:res_bench}) và thử nghiệm sơ bộ trên log bay PX4 (mục~\ref{sec:res_flight}); mục~\ref{sec:res_discuss} so sánh và nhận xét chung. Số liệu mô phỏng và bàn thử được trích từ các tệp CSV trong thư mục \texttt{results/} của kho mã (Phụ lục~\ref{app:repro}).
+
+\section{Mô phỏng: kết quả LMS và RLS cơ sở}
+\label{sec:res_sim}
+
+Hình~\ref{fig:sim_input} cho thấy tín hiệu lý tưởng bị che lấp hoàn toàn bởi rung trong miền thời gian, còn trong miền tần số tín hiệu hữu ích (1 và 3~Hz) tách biệt với hai đỉnh rung tại 30 và 60~Hz. Hình~\ref{fig:cmp} so sánh đầu ra hai bộ lọc: cả hai khôi phục được dạng sóng tần số thấp; đoạn quá độ của LMS kéo dài khoảng 2~s, của RLS ngắn hơn rõ rệt. Trên PSD, đỉnh 60~Hz còn sót lại ở đầu ra LMS nhưng gần như biến mất ở RLS.
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.32\linewidth}\includegraphics[width=\linewidth]{sim_signal_model.jpg}\caption{Miền thời gian}\end{subfigure}
+\begin{subfigure}[b]{0.32\linewidth}\includegraphics[width=\linewidth]{sim_fft_input.jpg}\caption{FFT}\end{subfigure}
+\begin{subfigure}[b]{0.32\linewidth}\includegraphics[width=\linewidth]{sim_psd_input.jpg}\caption{PSD (Welch)}\end{subfigure}
+\caption{Tín hiệu mô phỏng: tín hiệu lý tưởng $s(n)$, nhiễu rung $v(n)$ và tín hiệu đo $d(n)$}
+\label{fig:sim_input}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{cmp_time.jpg}\caption{Miền thời gian (toàn đoạn và phóng to 3--4 s)}\end{subfigure}
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{cmp_psd.jpg}\caption{PSD (Welch)}\end{subfigure}
+\caption{So sánh tín hiệu lý tưởng, Raw, LMS và RLS trên mô phỏng}
+\label{fig:cmp}
+\end{figure}
+
+Hình~\ref{fig:steady_zoom} phóng to đoạn 5--6~s ở trạng thái xác lập: đầu ra hai bộ lọc gần như trùng nhau và bám sát $s(n)$; phần sai lệch còn lại chủ yếu là nhiễu ngẫu nhiên $0{,}1\,\eta(n)$, vốn không tương quan với tham chiếu $x(n)=v_m(n)$ nên cấu trúc ANC không thể loại bỏ. Có thể coi đây là mức sai số thấp nhất có thể đạt được trong mô phỏng: RMS của nhiễu ngẫu nhiên khoảng 0,1~m/s$^2$, rất gần RMSE xác lập 0,104--0,105~m/s$^2$ của cả hai bộ lọc.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\linewidth]{steady_zoom.jpg}
+\caption{Tín hiệu lý tưởng, Raw, LMS và RLS ở trạng thái xác lập (5--6 s)}
+\label{fig:steady_zoom}
+\end{figure}
+
+Bảng~\ref{tab:baseline} tổng hợp các chỉ số. Trên toàn đoạn, RLS tốt hơn LMS (RMSE 0,1095 so với 0,1371~m/s$^2$), nhưng ở trạng thái xác lập hai thuật toán gần tương đương (0,1042 so với 0,1054~m/s$^2$, cùng giảm khoảng 83\%, tăng SNR khoảng 15,3--15,4~dB). Lợi thế toàn đoạn của RLS chủ yếu đến từ tốc độ hội tụ: 0,600~s so với 2,035~s (Hình~\ref{fig:conv}). Tại 30~Hz, RLS suy giảm biên độ 46,8~dB so với 32,3~dB của LMS.
+
+\begin{table}[htbp]
+\centering
+\caption[Chỉ số của cấu hình cơ sở trên mô phỏng]{Chỉ số của cấu hình cơ sở trên mô phỏng (nguồn: \texttt{day07}, \texttt{day08}, \texttt{day11})}
+\label{tab:baseline}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Chỉ số} & \textbf{Raw} & \textbf{LMS} & \textbf{RLS} \\
+\midrule
+RMSE toàn đoạn (m/s$^2$) & 0,6139 & 0,1371 & 0,1095 \\
+RMSE xác lập 3--10 s (m/s$^2$) & 0,6136 & 0,1054 & 0,1042 \\
+Giảm RMSE xác lập (\%) & -- & 82,83 & 83,02 \\
+SNR xác lập (dB) & $-4{,}14$ & 11,16 & 11,26 \\
+Suy giảm FFT tại 30 Hz (dB) & -- & 32,28 & 46,81 \\
+Suy giảm PSD tại 30 Hz (dB) & -- & 30,15 & 37,52 \\
+Thời gian hội tụ (s) & -- & 2,035 & 0,600 \\
+CV xác lập (\%) & 0,86 & 5,83 & 5,71 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\linewidth]{conv.jpg}
+\caption{RMSE trượt (cửa sổ 0,5 s) và thời điểm hội tụ của LMS và RLS}
+\label{fig:conv}
+\end{figure}
+
+Hình~\ref{fig:weights} cho thấy quỹ đạo 16 trọng số. Trọng số RLS ổn định sau vài trăm mili giây đầu, còn trọng số LMS tiếp tục trôi chậm trong suốt 10~s. Việc trọng số LMS còn trôi không có nghĩa sai số đầu ra còn lớn: vì tham chiếu chỉ gồm hai sóng sin, có nhiều tổ hợp trọng số cho cùng một đầu ra, nên chỉ các thành phần trọng số nằm trong không gian được kích thích mới ảnh hưởng tới $y(n)$.
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{lms_weights.jpg}\caption{LMS ($\mu=0{,}01$)}\end{subfigure}
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{rls_weights.jpg}\caption{RLS ($\lambda=0{,}99$)}\end{subfigure}
+\caption{Quỹ đạo các hệ số bộ lọc theo thời gian}
+\label{fig:weights}
+\end{figure}
+
+Phổ FFT ở Hình~\ref{fig:cmp_fft} xác nhận kết quả trong bảng: tại 30~Hz biên độ giảm từ 0,8032 xuống 0,0195 (LMS) và 0,0037 (RLS); tại 60~Hz vẫn còn một đỉnh nhỏ ở đầu ra LMS. Vùng 1--3~Hz của hai đầu ra trùng với tín hiệu lý tưởng, nghĩa là với tham chiếu lý tưởng bộ lọc không làm méo tín hiệu hữu ích. Ở trạng thái xác lập, CV của RMSE theo đoạn 1~s là 5,83\% (LMS) và 5,71\% (RLS) (Hình~\ref{fig:stab}); chênh lệch này quá nhỏ để kết luận thuật toán nào ổn định hơn. CV thấp của Raw (0,86\%) không có nghĩa Raw chính xác, vì nhiễu lớn nhưng đều vẫn cho CV nhỏ.
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{cmp_fft.jpg}\caption{Phổ FFT}\label{fig:cmp_fft}\end{subfigure}
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{stab.jpg}\caption{RMSE theo đoạn 1 s}\label{fig:stab}\end{subfigure}
+\caption{Phổ FFT sau lọc và độ ổn định ở trạng thái xác lập}
+\end{figure}
+
+Khi tìm hiểu vì sao LMS chậm hơn, nhóm tính ma trận tự tương quan của tham chiếu. Ma trận $\vect{R}_{xx}$ ($M=16$) của $x(n)$ chỉ có hạng 4, với các trị riêng khác không xấp xỉ 2,68; 2,46 (thành phần 30~Hz) và 0,37; 0,33 (thành phần 60~Hz). Với $\mu=0{,}01$, hằng số thời gian $1/(\mu\lambda_k)$ của các mode 60~Hz khoảng 270--300 mẫu (1,35--1,5~s), cùng bậc với thời gian hội tụ đo được. Điều này giải thích vì sao đỉnh 60~Hz còn sót trên PSD của LMS. Giới hạn ổn định $2/\lambda_{\max}\approx0{,}75$ lớn hơn mọi $\mu$ đã thử hơn một bậc.
+
+\section{Mô phỏng: khảo sát tham số}
+\label{sec:res_param}
+
+Bảng~\ref{tab:param} tổng hợp khảo sát $\mu$ và $\lambda$. Với LMS, RMSE xác lập nhỏ nhất tại $\mu=0{,}01$ trong các điểm thử; $\mu$ nhỏ hội tụ quá chậm so với 10~s tín hiệu, $\mu$ lớn làm tăng sai số dư. Với RLS, các cấu hình ổn định cho RMSE xác lập giảm nhẹ khi $\lambda$ tăng, còn $\lambda\le0{,}98$ thất bại do mẫu số của $\vect{k}(n)$ không dương.
+
+\begin{table}[htbp]
+\centering
+\caption[Khảo sát tham số LMS và RLS]{Khảo sát tham số LMS và RLS, $M=16$ (nguồn: \texttt{day09}, \texttt{day12})}
+\label{tab:param}
+\begin{tabular}{@{}cc@{\hspace{1.2cm}}cccc@{}}
+\toprule
+\multicolumn{2}{c}{\textbf{LMS}} & \multicolumn{4}{c}{\textbf{RLS} ($\delta=0{,}01$)} \\
+\cmidrule(r{1.2cm}){1-2}\cmidrule(l){3-6}
+$\mu$ & RMSE xác lập & $\lambda$ & RMSE xác lập & $n_{\text{fail}}$ & $n_{\text{fail}}\ln(1/\lambda)$ \\
+\midrule
+0,001 & 0,1601 & 0,95 & thất bại & 652 / 623 & 33,4 / 32,0 \\
+0,003 & 0,1153 & 0,97 & thất bại & 1076 / 1044 & 32,8 / 31,8 \\
+0,005 & 0,1070 & 0,98 & thất bại & 1608 / 1570 & 32,5 / 31,7 \\
+\textbf{0,010} & \textbf{0,1054} & 0,99 & 0,1042 & -- & -- \\
+0,020 & 0,1089 & 0,995 & 0,1035 & -- & -- \\
+0,050 & 0,1293 & 0,999 & 0,1030 & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{lms_mu.jpg}\caption{LMS theo $\mu$}\end{subfigure}
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{rls_lambda.jpg}\caption{RLS theo $\lambda$ (cấu hình ổn định)}\end{subfigure}
+\caption{RMSE toàn đoạn và xác lập theo tham số của LMS và RLS}
+\label{fig:param}
+\end{figure}
+
+Hình~\ref{fig:param} cho thấy hai xu hướng khác nhau. Với LMS, RMSE toàn đoạn giảm khi $\mu$ tăng tới 0,02 vì hội tụ nhanh hơn, nhưng RMSE xác lập lại nhỏ nhất ở $\mu=0{,}01$; như vậy chọn $\mu$ theo chỉ số toàn đoạn hay xác lập cho đáp án khác nhau. Với RLS, cả ba cấu hình ổn định cho kết quả gần như bằng nhau, chênh lệch RMSE xác lập chỉ khoảng 0,0012~m/s$^2$.
+
+Theo phân tích của nhóm, lỗi số của RLS xuất phát từ việc $\vect{R}_{xx}$ chỉ có hạng 4 trong khi bộ lọc có 16 hệ số: theo 12 hướng không được kích thích, cập nhật~(\ref{eq:rls}) chỉ còn chia cho $\lambda$, nên $\vect{P}$ tăng xấp xỉ $\delta^{-1}\lambda^{-n}$ (hiện tượng phình ma trận hiệp phương sai~\cite{haykin2014adaptive}) cho tới khi sai số làm tròn làm mẫu số không dương. Nếu đúng như vậy thì tích $n_{\text{fail}}\ln(1/\lambda)$ phải gần như không đổi; số liệu ở hai lần chạy (\texttt{day09}/\texttt{day12}) cho tích này trong khoảng 31,7--33,4, khớp với nhận định trên. Theo cùng mô hình, $\lambda=0{,}99$ chỉ ổn định vì tín hiệu dài 2000 mẫu ($2000\ln(1/0{,}99)\approx20$); với tín hiệu dài hơn khoảng 16~s cấu hình này cũng có nguy cơ thất bại. Nhóm chưa chạy thử để kiểm chứng điều này. Có thể khắc phục bằng giảm $M$, thêm điều chuẩn cho $\vect{P}$ hoặc dùng QR-RLS~\cite{sayed2003fundamentals}.
+
+\section{Mô phỏng: khảo sát mức rung}
+\label{sec:res_level}
+
+Khi nhân thành phần rung với hệ số 0,25--1,5, RMSE Raw tăng gần năm lần trong khi RMSE sau lọc gần như không đổi, nên mức giảm RMSE tăng theo mức rung: từ 33\% lên 85\% với LMS và từ 42\% lên 88\% với RLS (Bảng~\ref{tab:levels}, Hình~\ref{fig:levels}). Ở mức rung nhỏ, nhiễu ngẫu nhiên không khử được tạo mức sàn sai số. Tuy nhiên, khi chỉ xét trạng thái xác lập, biên độ dư 30~Hz của RLS cố định khoảng 0,0016 ở mọi mức, còn của LMS giảm xuống 0,00086 và 0,00034 ở hệ số 1,0 và 1,5, tức thấp hơn RLS; như vậy RLS chỉ triệt rung sâu hơn khi tính trên toàn đoạn.
+
+\begin{table}[htbp]
+\centering
+\caption[RMSE toàn đoạn theo mức rung]{RMSE toàn đoạn (m/s$^2$) và mức giảm theo mức rung (nguồn: \texttt{day10\_vibration\_results.csv})}
+\label{tab:levels}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+\textbf{Hệ số rung} & \textbf{Raw} & \textbf{LMS} & \textbf{RLS} & \textbf{Giảm LMS (\%)} & \textbf{Giảm RLS (\%)} \\
+\midrule
+0,25 & 0,1827 & 0,1217 & 0,1060 & 33,4 & 42,0 \\
+0,50 & 0,3198 & 0,1262 & 0,1077 & 60,5 & 66,3 \\
+1,00 & 0,6139 & 0,1317 & 0,1095 & 78,6 & 82,2 \\
+1,50 & 0,9132 & 0,1412 & 0,1118 & 84,5 & 87,8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{lvl_rmse.jpg}\caption{RMSE}\end{subfigure}
+\begin{subfigure}[b]{0.49\linewidth}\includegraphics[width=\linewidth]{lvl_snr.jpg}\caption{SNR}\end{subfigure}
+\caption{RMSE và SNR theo hệ số biên độ rung}
+\label{fig:levels}
+\end{figure}
+
+Bảng~\ref{tab:level_freq} và Hình~\ref{fig:lvl_psd} trình bày thành phần 30~Hz theo mức rung. Biên độ dư xác lập của RLS gần như cố định ở 0,00163 với mọi mức rung, cho thấy nghiệm bình phương tối thiểu của RLS không phụ thuộc thang biên độ tham chiếu; còn với LMS, công suất tham chiếu tăng làm các mode hội tụ nhanh hơn ở cùng $\mu$, nên biên độ dư giảm dần và thấp hơn RLS từ hệ số 1,0.
+
+\begin{table}[htbp]
+\centering
+\caption[Thành phần 30 Hz theo mức rung]{Thành phần 30 Hz theo mức rung (nguồn: \texttt{day10\_frequency\_levels.csv})}
+\label{tab:level_freq}
+\small
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Hệ số}} & \multicolumn{2}{c}{\textbf{Suy giảm FFT toàn đoạn (dB)}} & \multicolumn{2}{c}{\textbf{Biên độ dư xác lập}} & \multicolumn{2}{c}{\textbf{Suy giảm PSD (dB)}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+ & LMS & RLS & LMS & RLS & LMS & RLS \\
+\midrule
+0,25 & 10,6 & 37,9 & 0,02920 & 0,00163 & 14,9 & 25,3 \\
+0,50 & 22,5 & 42,0 & 0,00443 & 0,00163 & 30,1 & 31,2 \\
+1,00 & 33,7 & 46,8 & 0,00086 & 0,00163 & 41,9 & 37,2 \\
+1,50 & 39,2 & 49,5 & 0,00034 & 0,00163 & 51,2 & 40,7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\linewidth]{lvl_psd.jpg}
+\caption{PSD Raw, LMS và RLS ở bốn mức rung (0--60 Hz)}
+\label{fig:lvl_psd}
+\end{figure}
+
+RMSE toàn đoạn của LMS ở hệ số 1,0 trong bảng này (0,1317) khác giá trị 0,1371 ở Bảng~\ref{tab:baseline} vì \texttt{day10} bắt đầu vòng lặp từ mẫu đầu tiên, còn \texttt{day04} bắt đầu từ mẫu thứ $M$.
+
+\section{Dữ liệu thật trên bàn thử động cơ}
+\label{sec:res_bench}
+
+Hình~\ref{fig:bench_time} trình bày lệnh PWM, gia tốc trục $Z$ trước và sau lọc trên toàn bộ log, và đoạn phóng to 158--160~s ở mức PWM 1412. Dao động tăng rõ khi PWM tăng; trên đoạn phóng to, đầu ra NLMS và RLS có biên độ dao động nhỏ hơn Raw nhưng vẫn còn dao động đáng kể, khác với mô phỏng nơi đầu ra gần như trùng tín hiệu lý tưởng.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{bench_time.jpg}
+\caption{Log bàn thử: lệnh PWM, gia tốc trục $Z$ Raw/NLMS/RLS (ALE) và đoạn phóng to 158--160 s}
+\label{fig:bench_time}
+\end{figure}
+
+Bảng~\ref{tab:bench} là kết quả định lượng trích từ tệp \texttt{day15\_bench\_rms\_summary.csv}. Ở PWM 1100, RMS Raw (0,08--0,13~m/s$^2$) gần mức nhiễu nền, hai bộ lọc gần như không làm thay đổi tín hiệu; RLS còn làm RMS tăng nhẹ trên trục $X$ ($-1{,}05$\%) và $Z$ ($-1{,}44$\%). Ở PWM 1212, RLS giảm RMS nhiều hơn NLMS rõ rệt (20,3/28,7/8,8\% so với 11,1/18,6/5,8\% trên các trục $X/Y/Z$). Ở PWM 1412, hai thuật toán cho mức giảm gần nhau, khoảng 19--26\%. Mức giảm này thấp hơn nhiều so với mô phỏng vì không có tham chiếu nhiễu độc lập, ALE chỉ loại được phần dự đoán được của rung, và tần số lấy mẫu khoảng 147~Hz (Nyquist khoảng 75~Hz) có thể làm các thành phần rung tần số cao bị chồng phổ.
+
+\begin{table}[htbp]
+\centering
+\caption{RMS rung (m/s$^2$, độ lệch so với mức tĩnh khi tắt động cơ) và mức giảm trên log bàn thử}
+\label{tab:bench}
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+\textbf{Trục} & \textbf{Đoạn} & \textbf{Raw} & \textbf{NLMS} & \textbf{RLS} & \textbf{Giảm NLMS (\%)} & \textbf{Giảm RLS (\%)} \\
+\midrule
+\multirow{3}{*}{X} & PWM 1100 & 0,1333 & 0,1303 & 0,1347 & 2,30 & $-1{,}05$ \\
+ & PWM 1212 & 0,8265 & 0,7350 & 0,6591 & 11,06 & 20,25 \\
+ & PWM 1412 & 2,0288 & 1,5697 & 1,5023 & 22,63 & 25,95 \\
+\midrule
+\multirow{3}{*}{Y} & PWM 1100 & 0,1134 & 0,1091 & 0,1104 & 3,81 & 2,60 \\
+ & PWM 1212 & 1,0662 & 0,8682 & 0,7606 & 18,57 & 28,66 \\
+ & PWM 1412 & 2,0645 & 1,5675 & 1,5645 & 24,08 & 24,22 \\
+\midrule
+\multirow{3}{*}{Z} & PWM 1100 & 0,0835 & 0,0826 & 0,0847 & 1,12 & $-1{,}44$ \\
+ & PWM 1212 & 0,2002 & 0,1885 & 0,1826 & 5,84 & 8,78 \\
+ & PWM 1412 & 0,3602 & 0,2900 & 0,2871 & 19,48 & 20,29 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{bench_rms.jpg}
+\caption{RMS rung theo mức PWM trên ba trục: Raw, NLMS và RLS}
+\label{fig:bench_rms}
+\end{figure}
+
+Hình~\ref{fig:bench_psd} so sánh PSD ở đoạn PWM 1412 với PSD của đoạn tắt động cơ. Phổ Raw có các đỉnh nhọn quanh khoảng 13, 25 và 36~Hz cùng một đỉnh gần Nyquist (khoảng 75~Hz); NLMS và RLS hạ thấp các đỉnh nhọn này cỡ 5--10~dB nhưng nền phổ băng rộng gần như giữ nguyên, ở một số dải đầu ra RLS còn cao hơn Raw. Toàn bộ phổ sau lọc vẫn cao hơn phổ khi tắt động cơ khoảng 15--25~dB, tức phần lớn năng lượng rung vẫn còn trong tín hiệu. Kết quả này phù hợp với nguyên lý ALE: chỉ thành phần tuần hoàn hẹp băng được dự đoán và loại bỏ. Do không có tín hiệu vòng quay động cơ, nhóm chưa xác định được các đỉnh này ứng với tần số quay nào; một số đỉnh cũng có thể do chồng phổ.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{bench_psd.jpg}
+\caption{PSD Welch ở đoạn PWM 1412 so với đoạn tắt động cơ trên ba trục}
+\label{fig:bench_psd}
+\end{figure}
+
+\section{Thử nghiệm sơ bộ trên log bay PX4}
+\label{sec:res_flight}
+
+Kết quả trong mục này lấy từ lần chạy script \texttt{day16\_step04\_filter\_flight\_imu.m} trên máy của nhóm; script này chưa được đưa lên kho mã nên nhóm chỉ xem đây là thử nghiệm sơ bộ. Mục đích của thử nghiệm là xem quy trình đọc, tiền xử lý và lọc có chạy được trên dữ liệu bay thật hay không, chưa phải để đánh giá hiệu quả khử rung.
+
+\subsection{Dữ liệu và tiền xử lý}
+
+Bảng~\ref{tab:flight_topics} so sánh các topic gia tốc có trong log. Chỉ \texttt{sensor\_combined\_0} có tần số đủ cao để quan sát dao động hàng chục Hz; hai topic còn lại chỉ phù hợp để xem xu hướng chậm. Bảng~\ref{tab:flight_prep} tóm tắt kết quả kiểm tra dấu thời gian và tín hiệu sau tiền xử lý. Dấu thời gian tăng đơn điệu, không có giá trị không hữu hạn, nhưng có hai khoảng gián đoạn lớn (khoảng cách mẫu lớn nhất 159~ms, gấp khoảng 33 lần trung vị); việc chỉ giữ đoạn liên tục dài nhất giúp tránh nội suy qua các khoảng mất dữ liệu này. Với $F_s\approx208{,}29$~Hz, tần số Nyquist khoảng 104~Hz, cao hơn log bàn thử (khoảng 75~Hz).
+
+\begin{table}[htbp]
+\centering
+\caption{Các topic gia tốc trong log bay PX4}
+\label{tab:flight_topics}
+\small
+\begin{tabular}{@{}lccl@{}}
+\toprule
+\textbf{Topic} & \textbf{Số mẫu} & \textbf{Tần số xấp xỉ} & \textbf{Nhận xét} \\
+\midrule
+\texttt{sensor\_accel\_0/1/2} & 71 mỗi topic & 1 Hz & Quá thưa \\
+\texttt{vehicle\_acceleration\_0} & 1\,417 & 20,7 Hz & Chỉ xem xu hướng \\
+\texttt{sensor\_combined\_0} & 14\,671 & 208,29 Hz & Được chọn \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Kiểm tra dấu thời gian và tín hiệu sau tiền xử lý (\texttt{sensor\_combined\_0})}
+\label{tab:flight_prep}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Thông số} & \textbf{Giá trị} \\
+\midrule
+Thời lượng log & 70,964 s \\
+$\Delta t$ trung vị / nhỏ nhất / lớn nhất & 4,801 / 4,569 / 159,281 ms \\
+Khoảng gián đoạn $>1{,}5\times$ trung vị & 2 \\
+Dấu thời gian không tăng / giá trị NaN, Inf & 0 / 0 \\
+Đoạn liên tục được chọn & mẫu 2--14\,467 (14\,466 mẫu, 69,811 s) \\
+Lưới đều sau nội suy & 208,290 Hz, 14\,541 mẫu, 69,807 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Hình~\ref{fig:flight_raw} là gia tốc ba trục sau tiền xử lý. Trục $Z$ có nền khoảng $-9{,}8$~m/s$^2$ như dự kiến khi thân máy gần nằm ngang. Các đỉnh lớn ở đầu và cuối log có thể là sự kiện cất/hạ cánh hoặc thao tác, nhưng chưa có dữ liệu trạng thái bay đồng bộ để xác định nên không bị loại bỏ.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\linewidth]{flight_raw.jpg}
+\caption{Gia tốc IMU ba trục từ log bay PX4 (\texttt{sensor\_combined\_0}) trước khi lọc}
+\label{fig:flight_raw}
+\end{figure}
+
+\subsection{Cấu hình bộ lọc so với nhánh bàn thử}
+
+Bảng~\ref{tab:flight_cfg} đặt cấu hình của hai nhánh dữ liệu thật cạnh nhau. Hai nhánh khác nhau ở bước học NLMS (0,1 so với 0,01), hằng số khởi tạo RLS và đặc biệt là đầu ra được báo cáo. Độ trễ ALE tính theo thời gian là gần nhau (38,4~ms so với 33,3~ms). Do các khác biệt này, số liệu của hai nhánh không so sánh trực tiếp với nhau được.
+
+\begin{table}[htbp]
+\centering
+\caption{Cấu hình ALE của nhánh bàn thử và nhánh log bay}
+\label{tab:flight_cfg}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Thông số} & \textbf{Bàn thử} & \textbf{Log bay} \\
+\midrule
+$F_s$ sau nội suy & 150 Hz & 208,29 Hz \\
+Độ trễ $\Delta$ & 5 mẫu ($\approx$33,3 ms) & 8 mẫu ($\approx$38,4 ms) \\
+Bậc lọc $M$ & 16 & 16 \\
+NLMS: $\mu$ / $\varepsilon$ & 0,01 / $10^{-6}$ & 0,1 / $10^{-8}$ \\
+RLS: $\lambda$ / $\delta$ & 0,995 / 0,01 & 0,995 / 1 \\
+Mức tham chiếu được trừ & Trung bình đoạn tắt động cơ & Trung bình toàn đoạn \\
+Đầu ra được báo cáo & Phần dư $e(n)$ & Thành phần dự đoán $y(n)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Kết quả miền thời gian và miền tần số}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\linewidth]{flight_time.jpg}
+\caption{Log bay PX4: tín hiệu Raw và đầu ra dự đoán $y(n)$ của NLMS-ALE và RLS-ALE theo thời gian}
+\label{fig:flight_time}
+\end{figure}
+
+Trong miền thời gian (Hình~\ref{fig:flight_time}), đầu ra dự đoán của cả hai bộ lọc bám theo dạng tổng thể của Raw. Đầu ra RLS (đỏ) có biên độ dao động nhỏ hơn NLMS (xanh), phù hợp với bảng RMS ở dưới. Các đỉnh lớn quanh 5~s và cuối log vẫn xuất hiện trong cả hai đầu ra, nghĩa là bộ lọc không loại bỏ các sự kiện biên độ lớn này. Trên trục $Y$, đầu ra RLS có một đoạn dao động biên độ lớn trong khoảng 0--4~s, trước khi tín hiệu Raw có hoạt động đáng kể. Nhóm cho rằng đây là quá độ khởi động của RLS với $\delta=1$, nhưng chưa thử đổi $\delta$ để kiểm chứng. Ở các lần phân tích sau, nhóm sẽ bỏ đoạn đầu này khi tính chỉ số.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\linewidth]{flight_psd.jpg}
+\caption{PSD ba trục trên log bay PX4: Raw và đầu ra dự đoán $y(n)$ của NLMS-ALE và RLS-ALE}
+\label{fig:flight_psd}
+\end{figure}
+
+PSD ở Hình~\ref{fig:flight_psd} cho thấy rõ hơn đầu ra dự đoán giữ lại thành phần nào. Trên trục $Y$, đỉnh hẹp gần 22~Hz còn nguyên ở cả ba đường; trên trục $Z$, các đỉnh gần 14~Hz và 22~Hz cũng được giữ lại. Phần năng lượng giảm chủ yếu nằm ở nền băng rộng, đặc biệt ở dải trên khoảng 60~Hz. Trên trục $Y$, ở một số đoạn trong dải 10--40~Hz, PSD đầu ra RLS còn cao hơn Raw. Điều này phù hợp với cách hoạt động của ALE: thành phần tuần hoàn, mà nhiều khả năng là rung, được giữ lại trong $y(n)$, còn phần băng rộng khó dự đoán bị chuyển sang $e(n)$. Vì không có dữ liệu vòng quay động cơ, nhóm chưa gắn được các đỉnh 14~Hz và 22~Hz với tần số quay cụ thể. Ngoài ra, PSD ở vùng gần Nyquist có thể chịu ảnh hưởng của bước nội suy tuyến tính.
+
+\subsection{RMS AC và cách diễn giải}
+
+Bảng~\ref{tab:flight} và Hình~\ref{fig:flight_rms} cho thấy RMS AC (sau khi trừ trung bình và bỏ các mẫu khởi động của bộ lọc) của đầu ra dự đoán thấp hơn Raw trên cả ba trục. Mức giảm là 18,9--28,1\% với NLMS và 34,9--42,3\% với RLS; ví dụ trên trục $X$, $100\,(1-0{,}21074/0{,}25986)\approx18{,}9\%$ với NLMS. RLS cho RMS thấp hơn NLMS ở cả ba trục trong cấu hình này.
+
+\begin{table}[htbp]
+\centering
+\caption[RMS AC (m/s$^2$) của đầu ra dự đoán ALE trên log bay PX4]{RMS AC (m/s$^2$) của đầu ra dự đoán ALE trên log bay PX4 (kết quả sơ bộ)}
+\label{tab:flight}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+\textbf{Trục} & \textbf{Raw} & \textbf{NLMS} & \textbf{RLS} & \textbf{Giảm NLMS (\%)} & \textbf{Giảm RLS (\%)} \\
+\midrule
+X & 0,25986 & 0,21074 & 0,15444 & 18,90 & 40,57 \\
+Y & 0,45504 & 0,36922 & 0,29602 & 18,86 & 34,95 \\
+Z & 0,61696 & 0,44369 & 0,35589 & 28,09 & 42,32 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\linewidth]{flight_rms.jpg}
+\caption{RMS AC ba trục trên log bay PX4: Raw và đầu ra dự đoán NLMS/RLS}
+\label{fig:flight_rms}
+\end{figure}
+
+Đối chiếu với PSD, nhóm không coi mức giảm RMS này là tỷ lệ rung động cơ bị loại bỏ, vì phần năng lượng mất đi khỏi $y(n)$ chủ yếu là băng rộng, còn các đỉnh tuần hoàn vẫn còn. Nói đúng hơn, đầu ra dự đoán của bộ lọc có RMS AC thấp hơn Raw. RLS giảm nhiều hơn chỉ vì dự đoán trơn hơn trong cấu hình này, chưa đủ để nói RLS khử rung tốt hơn. Để đánh giá khử rung trên log bay, nhóm dự kiến làm thêm ba bước: (i) xuất đồng thời $y(n)$ và $e(n)$; (ii) tính công suất trong từng dải tần xác định (tích phân PSD) cho cả hai thành phần; (iii) dùng cùng quy ước đầu ra $e(n)$ như nhánh bàn thử. Ngoài ra, cần thử trên nhiều log bay hơn mới có thể rút ra xu hướng chung.
+
+\section{Thảo luận và đối chiếu}
+\label{sec:res_discuss}
+
+Mỗi nhánh dữ liệu cho nhóm một kết quả khác nhau. Trên mô phỏng, khi biết tín hiệu chuẩn và có tham chiếu lý tưởng, cả hai thuật toán giảm RMSE xác lập khoảng 83\%. Trên bàn thử, không có tham chiếu riêng, bộ lọc vẫn giảm được rung nhưng ít hơn nhiều (khoảng 20--29\% tuỳ trục và mức PWM) và phụ thuộc rõ vào mức rung. Với log bay, quy trình đọc, tiền xử lý và lọc chạy được, nhưng chỉ số hiện có chưa cho biết hiệu quả khử rung.
+
+Khi so sánh LMS và RLS, nhóm thấy RLS luôn hội tụ nhanh hơn và cho chỉ số toàn đoạn tốt hơn, trong khi ở trạng thái xác lập hai thuật toán gần tương đương và LMS thậm chí triệt thành phần 30~Hz sâu hơn ở mức rung cao. RLS đổi lại chi phí tính toán lớn hơn khoảng một bậc và nhạy với lỗi số khi tín hiệu tham chiếu thiếu kích thích. Bảng~\ref{tab:evidence} tổng hợp kết quả chính và hạn chế của từng nguồn dữ liệu.
+
+\begin{table}[htbp]
+\centering
+\caption{Tổng hợp kết quả theo nguồn dữ liệu}
+\label{tab:evidence}
+\small
+\begin{tabular}{@{}p{2.3cm}p{3.6cm}p{4cm}p{4cm}@{}}
+\toprule
+\textbf{Nguồn} & \textbf{Chỉ số sử dụng} & \textbf{Kết quả chính} & \textbf{Hạn chế} \\
+\midrule
+Mô phỏng & RMSE, SNR, FFT, PSD, hội tụ & LMS/RLS giảm sai số khoảng 83\% (xác lập) với tham chiếu lý tưởng & Tham chiếu lý tưởng, không áp nguyên cho UAV thật \\
+Bàn thử & RMS so với nền tắt động cơ, PSD & NLMS/RLS-ALE giảm RMS rung 19--29\% ở PWM 1212--1412 & Không tính được RMSE/SNR; chưa biết tần số quay \\
+Log bay (sơ bộ) & RMS AC, PSD & Quy trình chạy được trên dữ liệu bay; $y(n)$ có RMS AC thấp hơn Raw & Chưa đo được mức khử rung \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\end{document}
