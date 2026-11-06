@@ -1,0 +1,158 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày cách nhóm thực hiện các thí nghiệm: mô hình tín hiệu mô phỏng, cài đặt thuật toán, tiêu chí đánh giá, cách thu dữ liệu trên bàn thử và cách xử lý log bay PX4.
+
+\section{Tổng quan quy trình}
+
+Nhóm chia công việc thành ba nhánh theo mức độ khó tăng dần (Hình~\ref{fig:pipeline}). Nhánh mô phỏng dùng cấu trúc ANC với tín hiệu chuẩn biết trước để kiểm tra cài đặt và đo sai số tuyệt đối. Nhánh bàn thử dùng dữ liệu IMU thật khi động cơ quay ở các mức PWM khác nhau, có đoạn tắt động cơ làm mức nền tham chiếu. Nhánh log bay là thử nghiệm sơ bộ để xem quy trình có chạy được trên dữ liệu bay thực hay không. Mã nguồn được tổ chức theo giai đoạn trong kho mã của nhóm (Phụ lục~\ref{app:repro}); mỗi script đọc tệp MAT của giai đoạn trước và ghi kết quả vào thư mục \texttt{results/} (Bảng~\ref{tab:stages}).
+
+\begin{figure}[htbp]
+\centering
+\small
+\setlength{\unitlength}{1mm}
+\begin{picture}(150,64)
+\footnotesize
+\put(0,52){\framebox(43,11){\shortstack{Mô phỏng $s, v, d, x$\\(day02--03)}}}
+\put(43,57.5){\vector(1,0){5}}
+\put(48,52){\framebox(43,11){\shortstack{ANC: LMS / RLS\\(day04--05)}}}
+\put(91,57.5){\vector(1,0){5}}
+\put(96,52){\framebox(54,11){\shortstack{RMSE, SNR, FFT, PSD, hội tụ,\\tham số, mức rung (day06--14)}}}
+\put(0,30){\framebox(43,11){\shortstack{Bàn thử: HIGHRES\_IMU\\$\to$ CSV ($\approx$147 Hz)}}}
+\put(43,35.5){\vector(1,0){5}}
+\put(48,30){\framebox(43,11){\shortstack{Kiểm tra $\Delta t$, nội suy\\lưới đều 150 Hz}}}
+\put(91,35.5){\vector(1,0){5}}
+\put(96,30){\framebox(54,11){\shortstack{ALE: NLMS / RLS, đầu ra $e(n)$\\RMS theo PWM, PSD (day15)}}}
+\put(0,8){\framebox(43,11){\shortstack{Log bay PX4 (.ulg)\\$\to$ pyulog $\to$ CSV}}}
+\put(43,13.5){\vector(1,0){5}}
+\put(48,8){\framebox(43,11){\shortstack{Chọn đoạn liên tục,\\nội suy 208,29 Hz}}}
+\put(91,13.5){\vector(1,0){5}}
+\put(96,8){\framebox(54,11){\shortstack{ALE: NLMS / RLS, đầu ra $y(n)$\\RMS AC, PSD (sơ bộ)}}}
+\put(0,45.5){\textit{Nhánh 1 -- mô phỏng có tín hiệu chuẩn}}
+\put(0,23.5){\textit{Nhánh 2 -- dữ liệu bàn thử động cơ}}
+\put(0,1.5){\textit{Nhánh 3 -- log bay PX4 (thử nghiệm sơ bộ)}}
+\end{picture}
+\caption{Quy trình thực hiện đề tài theo ba nhánh dữ liệu}
+\label{fig:pipeline}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Tổ chức mã nguồn MATLAB theo giai đoạn}
+\label{tab:stages}
+\footnotesize
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{5.2cm}@{}}
+\toprule
+\textbf{Thư mục} & \textbf{Script chính} & \textbf{Nội dung} \\
+\midrule
+\texttt{02\_simulation} & \texttt{day02\_generate\_imu}, \texttt{day03\_fft\_psd\_analysis} & Sinh tín hiệu, phân tích FFT/PSD tín hiệu gốc \\
+\texttt{03\_lms\_rls} & \texttt{day04\_lms}, \texttt{day05\_rls}, \texttt{day06}--\texttt{day08} & Cài đặt LMS, RLS; so sánh thời gian, tần số, RMSE/SNR \\
+\texttt{04\_parameter\_study} & \texttt{day09\_parameter\_study}, \texttt{day09\_rls\_diagnostic}, \texttt{day12\_parameter\_sensitivity} & Khảo sát $\mu$, $\lambda$; chẩn đoán lỗi số RLS \\
+\texttt{05\_robustness} & \texttt{day10\_*}, \texttt{day11\_convergence\_analysis} & Bốn mức rung, nhiễu dư, hội tụ, ổn định \\
+\texttt{06\_summary} & \texttt{day13\_*}, \texttt{day14\_*} & Tổng hợp, vẽ hình cuối, kiểm tra tệp kết quả \\
+\texttt{07\_real\_data} & \texttt{day15\_step01}, \texttt{day15\_step02\_filter\_bench\_log} & Đọc log PX4; lọc NLMS/RLS-ALE log bàn thử \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Mô hình tín hiệu mô phỏng}
+\label{sec:simmodel}
+
+Tín hiệu mô phỏng (script \texttt{day02\_generate\_imu.m}) có $F_s=200$~Hz, thời lượng $T=10$~s, $N=2000$ mẫu. Tín hiệu IMU lý tưởng là tổng hai sóng sin tần số thấp, đại diện cho chuyển động hữu ích; nhiễu rung động cơ gồm thành phần cơ bản 30~Hz và hoạ âm 60~Hz; nhiễu ngẫu nhiên cảm biến là nhiễu Gauss với hạt giống cố định \texttt{rng(10)} để tái lập:
+\begin{align}
+s(n)&=0{,}5\sin(2\pi\cdot 1\cdot t_n)+0{,}2\sin(2\pi\cdot 3\cdot t_n),\\
+v_m(n)&=0{,}8\sin(2\pi\cdot 30\cdot t_n)+0{,}3\sin(2\pi\cdot 60\cdot t_n),\\
+v(n)&=v_m(n)+0{,}1\,\eta(n),\quad \eta(n)\sim\mathcal{N}(0,1),\\
+d(n)&=s(n)+v(n),\qquad x(n)=v_m(n).
+\end{align}
+
+Giá trị RMS của tín hiệu lý tưởng, của nhiễu và của tín hiệu đo lần lượt khoảng 0,3808; 0,6139 và 0,7231~m/s$^2$. Nhóm kiểm tra lại phép cộng tín hiệu, sai lệch lớn nhất $\max|d-(s+v)|$ chỉ cỡ $2{,}22\times10^{-16}$. Kênh tham chiếu $x(n)=v_m(n)$ ở đây đúng bằng thành phần rung động cơ, không chứa nhiễu ngẫu nhiên và không chứa $s(n)$. Đây là trường hợp lý tưởng của cấu trúc ANC, nên kết quả mô phỏng chỉ cho biết bộ lọc làm tốt nhất được đến đâu, không thể áp nguyên cho dữ liệu thật. Bảng~\ref{tab:simparam} tóm tắt các tham số.
+
+\begin{table}[htbp]
+\centering
+\caption{Tham số mô phỏng và cấu hình bộ lọc cơ sở}
+\label{tab:simparam}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Thông số} & \textbf{Giá trị} \\
+\midrule
+Tần số lấy mẫu $F_s$ / Nyquist & 200 Hz / 100 Hz \\
+Số mẫu $N$ / thời lượng & 2000 / 10 s \\
+Độ phân giải FFT $\Delta f$ & 0,1 Hz \\
+Rung động cơ mô phỏng & 30 Hz (biên độ 0,8) + 60 Hz (biên độ 0,3) \\
+Nhiễu ngẫu nhiên & $0{,}1\,\mathcal{N}(0,1)$, \texttt{rng(10)} \\
+LMS & $M=16$, $\mu=0{,}01$, $\vect{w}(0)=\vect{0}$ \\
+RLS & $M=16$, $\lambda=0{,}99$, $\delta=0{,}01$ \\
+Đoạn xác lập & $3\le t\le 10$ s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Cài đặt thuật toán}
+
+LMS và RLS được cài đặt trực tiếp theo~(\ref{eq:lms}) và~(\ref{eq:rls}) trong MATLAB (mã nguồn chính ở Phụ lục~\ref{app:code}). Sau mỗi bước cập nhật RLS, $\vect{P}$ được đối xứng hoá bằng $\vect{P}\leftarrow(\vect{P}+\vect{P}^T)/2$; mẫu số của $\vect{k}(n)$ và tính hữu hạn của $\vect{w}$, $\vect{P}$ được kiểm tra tại mỗi mẫu để phát hiện lỗi số. Script LMS cơ sở (\texttt{day04}) bắt đầu vòng lặp từ $n=M$, còn script RLS cơ sở (\texttt{day05}) và các script khảo sát (\texttt{day09}, \texttt{day10}) bắt đầu từ $n=1$ với các phần tử chưa có của vectơ hồi quy bằng không; hai cách này cho kết quả LMS toàn đoạn hơi khác nhau ở giai đoạn đầu nhưng kết quả xác lập như nhau.
+
+\section{Kịch bản thí nghiệm và tiêu chí đánh giá trên mô phỏng}
+\label{sec:criteria}
+
+Thí nghiệm mô phỏng gồm: chạy LMS và RLS cơ sở, so sánh trong miền thời gian, FFT, PSD và RMSE/SNR, khảo sát $\mu$, $\lambda$ và mức rung, đánh giá hội tụ. Cùng một chuỗi $d(n)$, $x(n)$, $s(n)$ được dùng cho mọi cấu hình.
+
+Các chỉ số được tính trên toàn đoạn và trên đoạn xác lập $3\le t\le10$~s. Biên độ FFT được tính trên tín hiệu đã trừ trung bình với $N_{\mathrm{FFT}}=N$, chuẩn hoá $|X[k]|/N$, đọc tại bin gần 30~Hz nhất. Thời gian hội tụ được xác định theo quy tắc: RMSE trượt với cửa sổ 100 mẫu (0,5~s) phải nằm dưới ngưỡng bằng 1,10 lần RMSE xác lập của chính thuật toán đó và duy trì liên tục trong 1~s; thời điểm đầu tiên thoả mãn là thời gian hội tụ. Đây là quy ước nhóm tự đặt; nếu đổi ngưỡng hoặc độ dài cửa sổ thì con số sẽ thay đổi. Độ ổn định xác lập được đo bằng hệ số biến thiên (CV) của RMSE theo các đoạn 1~s. Khi khảo sát tham số, mỗi lần chỉ thay một biến; cấu hình thất bại được ghi lại số mẫu xảy ra lỗi. Khảo sát mức rung nhân $v_m(n)$ với hệ số $0{,}25$; $0{,}5$; $1{,}0$; $1{,}5$. Các hệ số này là thang biên độ trong mô hình, không tương ứng với PWM hay vòng quay thật.
+
+\section{Thu dữ liệu IMU thật trên bàn thử}
+\label{sec:bench_acq}
+
+Nhóm ghi dữ liệu thật ngày 05/11/2026 trên bộ điều khiển bay Mamba F405 MK2 chạy PX4 v1.17, kết nối USB tới QGroundControl (QGC). QGC chuyển tiếp luồng MAVLink qua UDP cổng 14445 tới script Python \texttt{imu\_log.py}, script này ghi bản tin MAVLink \texttt{HIGHRES\_IMU} cùng lệnh PWM bốn động cơ (\texttt{SERVO\_OUTPUT\_RAW}) ra tệp CSV. Tần số gửi IMU được yêu cầu 250~Hz bằng lệnh \texttt{mavlink stream} trong MAVLink Console. Để an toàn, nhóm kẹp chặt khung xuống bàn, tháo toàn bộ cánh quạt và giới hạn mức ga khoảng 40\%; do đó rung ghi được là rung do động cơ và ESC, không gồm rung khí động học của cánh quạt. Hình~\ref{fig:bench_photo} là ảnh bàn thử và Bảng~\ref{tab:pwm} là kịch bản PWM.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.42\linewidth]{bench_photo.jpg}
+\caption{Bố trí bàn thử: khung UAV với bộ điều khiển bay PX4, ESC và bốn động cơ (đã tháo cánh quạt), kết nối USB tới máy tính}
+\label{fig:bench_photo}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Kịch bản PWM của log bàn thử \texttt{bench\_lms\_rls\_01} (bốn động cơ cùng mức)}
+\label{tab:pwm}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Thời gian (s)} & \textbf{PWM ($\mu$s)} & \textbf{Ghi chú / vai trò} \\
+\midrule
+0--43 & 1000 (tắt) & Có va chạm khoảng 36--39 s \\
+43--56 / 56--73 & 1140 / 1196 & Lượt 1, không dùng để đánh giá \\
+73--128 & 1000 (tắt) & Đoạn 90--125 s sạch, dùng làm nền \\
+128--143 & 1100 & Đoạn đánh giá ``PWM 1100'' \\
+143--155 & 1212 & Đoạn đánh giá ``PWM 1212'' \\
+156--167 & 1412 & Đoạn đánh giá ``PWM 1412'' \\
+167--183 & 1900 & Vượt giới hạn 40\% ga, loại bỏ \\
+184--203 & 1000 (tắt) & Sạch, dùng làm nền \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Log thu được dài khoảng 203~s với 29\,906 mẫu \texttt{HIGHRES\_IMU}, tần số trung bình khoảng 147~Hz (thấp hơn mức yêu cầu 250~Hz) và khoảng cách mẫu lớn nhất 18~ms, tức không có khoảng mất dữ liệu đáng kể (Hình~\ref{fig:bench_raw}). Nhóm chưa ghi lại thông số động cơ (KV), số cell pin và loại cánh quạt trong lần thử này.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{bench_raw.jpg}
+\caption{Dữ liệu thô của log bàn thử: gia tốc, vận tốc góc và PWM bốn động cơ theo thời gian (vùng tô xám là các đoạn động cơ quay)}
+\label{fig:bench_raw}
+\end{figure}
+
+\section{Xử lý dữ liệu bàn thử}
+\label{sec:bench_proc}
+
+Script \texttt{day15\_step02\_filter\_bench\_log.m} đọc các dòng \texttt{HIGHRES\_IMU}, đổi dấu thời gian của bộ điều khiển bay từ micro giây sang giây, loại các dấu thời gian trùng và nội suy tuyến tính ba trục gia tốc về lưới đều $F_s=150$~Hz (lệnh PWM nội suy theo giá trị trước đó). Với mỗi trục, mức tĩnh $g_0$ được tính là trung bình của các đoạn tắt động cơ sạch (90--125~s và từ 184~s), sau đó tín hiệu chính là $d(n)=a(n)-g_0$.
+
+Vì log thật không có kênh tham chiếu rung, bộ lọc dùng cấu trúc ALE với $x(n)=d(n-\Delta)$, $\Delta=5$ mẫu (khoảng 33~ms). Như đã nêu ở Chương~2, rung tuần hoàn của động cơ vẫn tương quan sau độ trễ và được dự đoán vào $y(n)$; đầu ra được dùng là phần dư $e(n)=d(n)-y(n)$, được cộng lại $g_0$ khi vẽ hình. Tham số: $M=16$; NLMS với $\mu=0{,}01$, $\varepsilon=10^{-6}$; RLS với $\lambda=0{,}995$, $\delta=0{,}01$ và đối xứng hoá $\vect{P}$ sau mỗi bước. Chỉ số đánh giá là RMS của độ lệch so với mức tĩnh $g_0$ trong từng đoạn PWM, so sánh Raw với NLMS và RLS; PSD Welch được tính trong đoạn PWM 1412 (cửa sổ Hamming 256 mẫu, chồng lấn 128, $N_{\mathrm{FFT}}=1024$) và so với PSD của đoạn nền.
+
+\section{Xử lý log bay PX4 (thử nghiệm sơ bộ)}
+\label{sec:flight_proc}
+
+Log bay định dạng ULog của PX4 được lưu trong thư mục \texttt{data/flight} của kho mã với tên tệp \nolinkurl{log_4_2026-10-25-17-24-42.ulg}. Hàm \texttt{ulogreader} của MATLAB R2023a báo lỗi ``Colon operands must be in the range of the data type'' khi đọc tệp này, nên nhóm chuyển sang giải mã bằng thư viện Python pyulog và xuất các topic ra CSV. Nhóm chọn topic \texttt{sensor\_combined\_0} vì đây là topic gia tốc duy nhất có tần số đủ cao (Bảng~\ref{tab:flight_topics}).
+
+Kiểm tra dấu thời gian cho thời lượng 70,964~s, $\Delta t$ trung vị 4,801~ms, nhỏ nhất 4,569~ms, lớn nhất 159,281~ms; có hai khoảng gián đoạn lớn hơn 1,5 lần trung vị, không có dấu thời gian không tăng và không có giá trị không hữu hạn. Đoạn liên tục dài nhất (mẫu 2 đến 14\,467, gồm 14\,466 mẫu, 69,811~s) được nội suy tuyến tính về lưới đều 208,290~Hz, cho 14\,541 mẫu. Bộ lọc dùng cấu trúc ALE với $\Delta=8$ mẫu, $M=16$; NLMS $\mu=0{,}1$, $\varepsilon=10^{-8}$; RLS $\lambda=0{,}995$, $\delta=1$; tín hiệu từng trục được trừ trung bình trước khi lọc. Khác với nhánh bàn thử, đầu ra được lưu trong nhánh này là thành phần dự đoán $y(n)$ cộng lại giá trị trung bình, không phải phần dư $e(n)$.
+
+
+\end{document}

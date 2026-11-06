@@ -1,0 +1,14 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+\section{Kết luận}
+
+Trong đề tài này, nhóm đã cài đặt và đánh giá hai thuật toán lọc thích nghi LMS và RLS, cùng biến thể NLMS, cho bài toán giảm nhiễu rung trong tín hiệu gia tốc IMU. Trên mô phỏng có tín hiệu chuẩn, cả hai thuật toán giảm sai số khoảng 83\% ở trạng thái xác lập; RLS hội tụ nhanh hơn LMS rõ rệt nhưng nhạy với lỗi số khi hệ số quên nhỏ, còn ở trạng thái xác lập hai thuật toán cho kết quả gần tương đương. Trên dữ liệu thật từ bàn thử động cơ, NLMS và RLS ở cấu trúc ALE giảm được một phần rung, hiệu quả rõ hơn khi mức ga cao. Với log bay PX4, quy trình đọc, tiền xử lý và lọc đã chạy được, nhưng chỉ số hiện có chưa cho biết hiệu quả khử rung.
+
+Đề tài còn một số hạn chế: tham chiếu trong mô phỏng là lý tưởng nên kết quả lạc quan hơn thực tế; dữ liệu thật không có tín hiệu chuẩn, kênh tham chiếu rung riêng hay dữ liệu vòng quay động cơ; log bàn thử có tần số lấy mẫu thấp và thời gian mỗi mức ga ngắn; thuật toán mới chạy offline trên MATLAB.
+
+\section{Hướng phát triển}
+
+Trước mắt, nhóm sẽ thống nhất cách xử lý log bay với nhánh bàn thử, ghi thêm dữ liệu với tần số lấy mẫu cao hơn và có tín hiệu vòng quay động cơ. Về lâu dài, nhóm muốn thử cấu hình hai cảm biến để dùng cấu trúc ANC trên phần cứng thật, cải thiện độ ổn định số của RLS, và triển khai NLMS chạy thời gian thực trên vi điều khiển.
+
+\end{document}

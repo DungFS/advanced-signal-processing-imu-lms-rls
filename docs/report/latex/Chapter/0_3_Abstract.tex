@@ -1,0 +1,20 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+\begin{center}
+    \Large{\textbf{TÓM TẮT}}
+\end{center}
+\phantomsection\addcontentsline{toc}{chapter}{TÓM TẮT}
+\vspace{0.5cm}
+
+Tín hiệu gia tốc của khối đo lường quán tính (IMU) trên robot và UAV bị chồng lẫn dao động cơ học do động cơ và cánh quạt gây ra, làm giảm chất lượng thông tin trạng thái cấp cho các khâu ước lượng và điều khiển. Bộ lọc tần số cố định đòi hỏi biết trước dải rung, trong khi rung động cơ thay đổi theo mức ga; vì vậy nhóm chọn tìm hiểu hai thuật toán lọc thích nghi LMS và RLS, cùng biến thể NLMS, để giảm nhiễu rung. Nhóm làm theo ba bước. Trước hết, nhóm xây dựng một mô hình mô phỏng MATLAB có tín hiệu chuẩn với $F_s=200$~Hz, 2000 mẫu, rung động cơ giả lập tại 30~Hz và 60~Hz, trong cấu trúc khử nhiễu thích nghi (ANC) có kênh tham chiếu nhiễu. Sau đó, nhóm áp dụng hai thuật toán ở cấu trúc bộ tăng cường vạch phổ thích nghi (ALE) cho dữ liệu IMU thật ghi trên bàn thử động cơ (PX4, bản tin HIGHRES\_IMU, khoảng 147~Hz) và cho một log bay PX4. Trên mô phỏng, với bậc lọc $M=16$, LMS ($\mu=0{,}01$) và RLS ($\lambda=0{,}99$) giảm RMSE xác lập từ 0,6136 xuống 0,1054 và 0,1042~m/s$^2$ (khoảng 83\%), tăng SNR xác lập khoảng 15,3--15,4~dB; RLS hội tụ trong 0,600~s so với 2,035~s của LMS và suy giảm thành phần 30~Hz sâu hơn (46,8~dB so với 32,3~dB), nhưng phát sinh lỗi số khi $\lambda\le 0{,}98$. Trên bàn thử, RMS rung giảm tới 19--26\% ở mức PWM 1412 và gần như không đổi ở PWM 1100. Toàn bộ mã nguồn và dữ liệu được lưu trong kho mã của nhóm để có thể chạy lại. Qua đề tài, nhóm nhận thấy kết quả trên dữ liệu thật thấp hơn nhiều so với mô phỏng, chủ yếu do không có tín hiệu chuẩn và kênh tham chiếu rung riêng.
+
+\vspace{0.5cm}
+\begin{flushright}
+\begin{tabular}{@{}c@{}}
+Nhóm học viên thực hiện\\
+\textit{(Ký và ghi rõ họ tên)}\\[1.6cm]
+\AUTHOR\qquad\qquad \AUTHORTWO
+\end{tabular}
+\end{flushright}
+
+\end{document}

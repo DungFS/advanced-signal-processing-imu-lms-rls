@@ -1,0 +1,82 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+Chương này tóm tắt những kiến thức nhóm sử dụng trong đề tài: đặc điểm tín hiệu IMU và phân tích phổ, cấu trúc lọc thích nghi ANC/ALE, các thuật toán LMS, NLMS, RLS và các chỉ số đánh giá.
+
+\section{Tín hiệu IMU, lấy mẫu và phân tích phổ}
+
+Gia tốc kế đo lực riêng trên các trục của hệ toạ độ gắn cảm biến~\cite{titterton2004strapdown}; khi thiết bị đứng yên và gần nằm ngang, trục $Z$ có giá trị xấp xỉ $-9{,}8$~m/s$^2$. Ngoài chuyển động hữu ích, tín hiệu đo chứa nhiễu ngẫu nhiên, trôi chậm và rung cơ học có tính tuần hoàn do động cơ, thường gồm tần số cơ bản và các hoạ âm thay đổi theo vòng quay.
+
+Với tần số lấy mẫu $F_s$, chỉ các thành phần dưới tần số Nyquist $f_N=F_s/2$ được biểu diễn đúng; thành phần cao hơn bị chồng phổ và không thể khôi phục sau khi lấy mẫu. Phổ biên độ được tính bằng FFT với độ phân giải $\Delta f=F_s/N$~\cite{oppenheim2010dtsp}. Mật độ phổ công suất (PSD) được ước lượng bằng phương pháp Welch~\cite{welch1967psd}, chia tín hiệu thành các đoạn chồng lấn có nhân cửa sổ rồi lấy trung bình periodogram để giảm phương sai; nhóm dùng hàm \texttt{pwelch} của MATLAB với cửa sổ Hamming 256 mẫu, chồng lấn 50\% và $N_{\mathrm{FFT}}=1024$.
+
+\section{Cấu trúc lọc thích nghi: ANC và ALE}
+
+Bộ lọc FIR thích nghi bậc $M$ có vectơ hồi quy $\vect{x}(n)=[x(n), x(n-1), \dots, x(n-M+1)]^T$, trọng số $\vect{w}(n)$, đầu ra và sai số
+\begin{equation}
+y(n)=\vect{w}^T(n)\,\vect{x}(n),\qquad e(n)=d(n)-y(n).
+\label{eq:fir}
+\end{equation}
+Trong cấu trúc khử nhiễu thích nghi (ANC)~\cite{widrow1975anc}, tín hiệu chính là $d(n)=s(n)+v(n)$ và kênh tham chiếu $x(n)$ tương quan với nhiễu $v(n)$ nhưng không tương quan với $s(n)$; khi đó $y(n)$ ước lượng nhiễu và $e(n)\approx s(n)$ là đầu ra đã khử nhiễu (Hình~\ref{fig:anc_ale}a). Khi không có kênh tham chiếu, cấu trúc ALE dùng bản trễ của chính tín hiệu đo, $x(n)=d(n-\Delta)$ (Hình~\ref{fig:anc_ale}b): thành phần tuần hoàn vẫn tương quan sau độ trễ nên được dự đoán vào $y(n)$, còn thành phần băng rộng ở lại trong $e(n)$. Vì vậy với ALE, cần xác định rung nằm ở thành phần nào trước khi coi một đầu ra là tín hiệu đã khử rung.
+
+\begin{figure}[htbp]
+\centering
+\small
+\setlength{\unitlength}{1mm}
+\begin{picture}(150,72)
+\footnotesize
+% ---- (a) ANC ----
+\put(0,68){\textbf{(a) ANC hai kênh}}
+\put(0,58){$d(n)=s(n)+v(n)$}\put(33,59){\vector(1,0){79.5}}
+\put(115,59){\circle{5}}\put(115,59){\makebox(0,0){$\Sigma$}}
+\put(117.5,59){\vector(1,0){10}}\put(129,58){$e(n)\approx s(n)$}
+\put(0,46){$x(n)\sim v(n)$}\put(22,47){\vector(1,0){30}}
+\put(52,42){\framebox(34,10){FIR $\vect{w}(n)$}}
+\put(86,47){\line(1,0){29}}\put(115,47){\vector(0,1){9.5}}\put(116.5,50){$-y(n)$}
+\put(122,59){\line(0,-1){21}}\put(122,38){\line(-1,0){53}}\put(69,38){\vector(0,1){4}}\put(80,34){cập nhật LMS/RLS bằng $e(n)$}
+% ---- (b) ALE ----
+\put(0,28){\textbf{(b) ALE một kênh}}
+\put(0,18){$d(n)$}\put(9,19){\vector(1,0){103.5}}
+\put(115,19){\circle{5}}\put(115,19){\makebox(0,0){$\Sigma$}}
+\put(117.5,19){\vector(1,0){10}}\put(129,18){$e(n)$}
+\put(18,19){\line(0,-1){12}}\put(18,7){\vector(1,0){8}}
+\put(26,2){\framebox(16,10){$z^{-\Delta}$}}\put(42,7){\vector(1,0){10}}\put(43,8.5){$x(n)$}
+\put(52,2){\framebox(34,10){FIR $\vect{w}(n)$}}
+\put(86,7){\line(1,0){29}}\put(115,7){\vector(0,1){9.5}}\put(116.5,10){$-y(n)$}
+\put(122,19){\line(0,-1){21}}\put(122,-2){\line(-1,0){53}}\put(69,-2){\vector(0,1){4}}
+\end{picture}
+\caption{Hai cấu trúc lọc thích nghi dùng trong đề tài: (a) khử nhiễu thích nghi dùng trong mô phỏng; (b) bộ tăng cường vạch phổ thích nghi dùng cho dữ liệu thật}
+\label{fig:anc_ale}
+\end{figure}
+
+\section{Thuật toán LMS, NLMS và RLS}
+
+LMS~\cite{widrow1985adaptive} cập nhật trọng số theo gradient tức thời của $e^2(n)$, còn NLMS chuẩn hoá bước học theo năng lượng đầu vào để ít nhạy với biên độ tín hiệu:
+\begin{equation}
+\vect{w}(n+1)=\vect{w}(n)+\mu\,e(n)\,\vect{x}(n),\qquad
+\vect{w}(n+1)=\vect{w}(n)+\frac{\mu}{\varepsilon+\|\vect{x}(n)\|^2}\,e(n)\,\vect{x}(n).
+\label{eq:lms}
+\end{equation}
+LMS hội tụ theo trung bình khi $0<\mu<2/\lambda_{\max}$, với $\lambda_{\max}$ là trị riêng lớn nhất của ma trận tự tương quan đầu vào $\vect{R}_{xx}$; tốc độ hội tụ bị chi phối bởi trị riêng khác không nhỏ nhất~\cite{haykin2014adaptive}. Chi phí của LMS là $O(M)$ mỗi mẫu.
+
+RLS tối thiểu hoá tổng sai số bình phương có trọng số mũ $\sum_{i}\lambda^{n-i}e^2(i)$ với hệ số quên $0<\lambda\le1$. Khởi tạo $\vect{w}(0)=\vect{0}$, $\vect{P}(0)=\delta^{-1}\vect{I}$, tại mỗi mẫu:
+\begin{equation}
+\begin{gathered}
+\vect{k}(n)=\frac{\vect{P}(n-1)\vect{x}(n)}{\lambda+\vect{x}^T(n)\vect{P}(n-1)\vect{x}(n)},\qquad
+\vect{w}(n)=\vect{w}(n-1)+\vect{k}(n)e(n),\\
+\vect{P}(n)=\lambda^{-1}\big[\vect{P}(n-1)-\vect{k}(n)\vect{x}^T(n)\vect{P}(n-1)\big].
+\end{gathered}
+\label{eq:rls}
+\end{equation}
+RLS thường hội tụ nhanh hơn LMS vì $\vect{P}(n)$ xấp xỉ $\vect{R}_{xx}^{-1}$ và làm trắng hoá đầu vào, đổi lại chi phí $O(M^2)$ mỗi mẫu và nhạy với sai số số học~\cite{haykin2014adaptive,sayed2003fundamentals}.
+
+\section{Các chỉ số đánh giá}
+\label{sec:metrics}
+
+Khi biết tín hiệu chuẩn $s(n)$ và ước lượng $\hat{s}(n)$:
+\begin{equation}
+\mathrm{RMSE}=\sqrt{\tfrac{1}{N}\textstyle\sum_{n}\big(\hat{s}(n)-s(n)\big)^2},\qquad
+\mathrm{SNR}=10\log_{10}\dfrac{\sum_n s^2(n)}{\sum_n\big(\hat{s}(n)-s(n)\big)^2}\ \text{(dB)}.
+\end{equation}
+Suy giảm biên độ phổ tại một tần số tính bằng $20\log_{10}(A_{\text{raw}}/A_{\text{lọc}})$, suy giảm PSD bằng $10\log_{10}(P_{\text{raw}}/P_{\text{lọc}})$. Trên dữ liệu thật không có $s(n)$, nên nhóm dùng RMS của độ lệch so với mức tĩnh khi tắt động cơ và PSD. Mức giảm RMS chỉ cho biết đầu ra dao động ít hơn, không tự động là tỷ lệ nhiễu rung bị loại bỏ.
+
+\end{document}

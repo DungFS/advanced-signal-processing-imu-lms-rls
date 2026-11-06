@@ -1,0 +1,26 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+\section{Môi trường và cấu trúc kho mã}
+
+Kết quả được tạo bằng MATLAB R2023a với Signal Processing Toolbox (hàm \texttt{pwelch}); việc đọc log PX4 bằng \texttt{ulogreader} cần thêm UAV Toolbox, hoặc dùng Python với thư viện pyulog. Mã nguồn, dữ liệu và kết quả của đề tài được lưu tại kho mã \url{https://github.com/DungFS/advanced-signal-processing-imu-lms-rls} (phiên bản commit \texttt{c11cdca}). Kho mã gồm ba thư mục chính: \texttt{code/} chứa các script MATLAB chia theo giai đoạn (Bảng~\ref{tab:stages}), \texttt{data/} chứa dữ liệu đo thật (log bàn thử \texttt{bench/} và log bay \texttt{flight/}), \texttt{results/} chứa kết quả do script sinh ra (\texttt{simulation/} và \texttt{real\_data/}). Mỗi script tự xác định thư mục gốc của kho mã từ vị trí của chính nó nên không cần sửa đường dẫn.
+
+\section{Tái lập kết quả mô phỏng}
+
+Chạy các script theo thứ tự thư mục \texttt{02\_simulation} đến \texttt{06\_summary}. Script sau đọc tệp MAT do script trước tạo ra trong \texttt{results/simulation/}, theo thứ tự phụ thuộc: dữ liệu cơ sở (\texttt{day02}), LMS (\texttt{day04}), RLS (\texttt{day05}), so sánh (\texttt{day06}), tần số (\texttt{day07}), đánh giá (\texttt{day08}). Không thay đổi hạt giống \texttt{rng(10)} và không sinh lại dữ liệu giữa các phép so sánh. Sau mỗi bước, kiểm tra số mẫu ($N=2000$), $F_s=200$~Hz và sự tồn tại của các biến \texttt{s}, \texttt{d}, \texttt{x}, \texttt{e}. Các script \texttt{day14\_*} kiểm tra sự tồn tại và tính nhất quán của toàn bộ tệp kết quả.
+
+\section{Tái lập kết quả bàn thử}
+
+Ghi log theo hướng dẫn \texttt{docs/HUONG\_DAN\_GHI\_LOG.md}: tháo cánh quạt, kẹp chặt khung, bật chuyển tiếp MAVLink trong QGC tới \texttt{127.0.0.1:14445}, tăng tốc độ luồng bằng các lệnh
+
+\begin{lstlisting}[language={}, numbers=none]
+mavlink stream -d /dev/ttyACM0 -s HIGHRES_IMU -r 250
+mavlink stream -d /dev/ttyACM0 -s SERVO_OUTPUT_RAW -r 50
+\end{lstlisting}
+rồi chạy \texttt{imu\_log.py} để ghi CSV. Các lệnh \texttt{mavlink stream} mất tác dụng sau khi khởi động lại bộ điều khiển bay. Sau khi có tệp CSV, chạy \texttt{code/07\_real\_data/day15\_step02\_filter\_bench\_log.m}; script ghi ba hình và tệp \texttt{day15\_bench\_rms\_summary.csv} vào \texttt{results/real\_data/}. Nếu dùng log mới, cần sửa các mốc thời gian của đoạn nền và đoạn PWM trong mục \texttt{SEGMENTS} của script cho khớp kịch bản ghi.
+
+\section{Tái lập kết quả log bay}
+
+Giải mã tệp \texttt{.ulg} bằng pyulog (ví dụ lệnh \texttt{ulog2csv}) để xuất topic \texttt{sensor\_combined\_0}, dùng các trường \texttt{accelerometer\_m\_s2[0..2]} và \texttt{timestamp} (micro giây). Trước khi lọc, in tên cột, đổi dấu thời gian về giây, kiểm tra mọi $\Delta t>0$, đếm số khoảng gián đoạn lớn hơn 1,5 lần trung vị và số giá trị NaN/Inf; nếu không đạt thì dừng trước khi tính FFT/PSD hoặc lọc. Sau khi lọc, đối chiếu số mẫu 14\,541, $F_s\approx208{,}290$~Hz, thời lượng khoảng 69,807~s và bảng RMS với kết quả ở Bảng~\ref{tab:flight}. Nhóm sẽ bổ sung script \texttt{day16\_step04\_filter\_flight\_imu.m} của nhánh này vào kho mã.
+
+\end{document}

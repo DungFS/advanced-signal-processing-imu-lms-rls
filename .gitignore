@@ -1,0 +1,30 @@
+# Office lock files
+~$*
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.ist
+*.lof
+*.log
+*.lot
+*.out
+*.synctex.gz
+*.toc
+*.xdv
+
+# Archives (the unpacked source is in docs/report/latex)
+*.zip
+
+# MATLAB autosave
+*.asv
+
+# Working copies at repo root (tracked copies live in docs/)
+/*.pptx
+/*.pdf
